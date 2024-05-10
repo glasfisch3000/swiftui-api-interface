@@ -7,7 +7,7 @@ import CompilerPluginSupport
 let package = Package(
     name: "api-interface",
     platforms: [
-        .macOS("10.13")
+        .macOS("10.15")
     ],
     products: [
         .library(
