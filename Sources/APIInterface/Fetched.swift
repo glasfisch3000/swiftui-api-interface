@@ -15,8 +15,8 @@ public struct Fetched<Source: Fetchable>: DynamicProperty {
     }
     
     public var wrappedValue: FetchStatus<Value> {
-        if error != nil {
-            .error
+        if let error = error {
+            .error(error)
         } else if let value = cachedValue {
             .value(value)
         } else {

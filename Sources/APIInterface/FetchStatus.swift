@@ -1,5 +1,5 @@
 public enum FetchStatus<Value> {
     case value(Value)
-    case error
+    case error(Error)
     case loading
 }
