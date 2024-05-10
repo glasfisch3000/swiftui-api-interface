@@ -1,20 +1,20 @@
 import SwiftUI
 
 @propertyWrapper
-struct Fetched<Source: Fetchable>: DynamicProperty {
-    typealias Value = Source.FetchedValue
+public struct Fetched<Source: Fetchable>: DynamicProperty {
+    public typealias Value = Source.FetchedValue
     
     @State private var cachedValue: Value? = nil
     @State private var error: Error? = nil
     @State private var loadingTasks: [UUID: Task<Value, Error>] = [:]
     
-    var source: Source
+    public var source: Source
     
-    init(source: Source) {
+    public init(source: Source) {
         self.source = source
     }
     
-    var wrappedValue: FetchStatus<Value> {
+    public var wrappedValue: FetchStatus<Value> {
         if error != nil {
             .error
         } else if let value = cachedValue {
@@ -24,7 +24,7 @@ struct Fetched<Source: Fetchable>: DynamicProperty {
         }
     }
     
-    func update() {
+    public func update() {
         guard self.cachedValue == nil else { return }
         guard self.error == nil else { return }
         guard self.loadingTasks.isEmpty else { return }
@@ -34,7 +34,7 @@ struct Fetched<Source: Fetchable>: DynamicProperty {
         }
     }
     
-    func refresh() async {
+    public func refresh() async {
         let uuid = UUID()
         
         // kickstart loading task
