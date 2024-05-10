@@ -5,7 +5,7 @@ import PackageDescription
 import CompilerPluginSupport
 
 let package = Package(
-    name: "api-interface",
+    name: "swiftui-api-interface",
     platforms: [
         .macOS("10.15")
     ],
