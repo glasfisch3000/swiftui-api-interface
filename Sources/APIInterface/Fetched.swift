@@ -60,3 +60,27 @@ public struct Fetched<Source: Fetchable>: DynamicProperty {
         loadingTasks.removeValue(forKey: uuid)
     }
 }
+
+extension Fetched where Source: FetchableWithConfiguration {
+    public func refresh(with configuration: Source.Configuration) async {
+        let uuid = UUID()
+        
+        // kickstart loading task
+        let task = Task {
+            try await source.fetch(with: configuration)
+        }
+        self.loadingTasks[uuid] = task
+        
+        // wait for result
+        switch await task.result {
+        case .success(let value):
+            self.cachedValue = value
+            self.error = nil
+        case .failure(let error):
+            self.error = error
+        }
+        
+        // remove task from registry
+        loadingTasks.removeValue(forKey: uuid)
+    }
+}
