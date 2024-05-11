@@ -24,6 +24,10 @@ public struct Fetched<Source: Fetchable>: DynamicProperty {
         }
     }
     
+    public var isLoading: Bool {
+        !loadingTasks.isEmpty
+    }
+    
     public func update() {
         guard self.cachedValue == nil else { return }
         guard self.error == nil else { return }
