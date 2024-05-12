@@ -95,3 +95,15 @@ extension Fetched where Source: FetchableWithConfiguration {
         loadingTasks.removeValue(forKey: uuid)
     }
 }
+
+extension Fetched {
+    public func reset() {
+        self.cachedValue = nil
+        self.error = nil
+        
+        for (uuid, loadingTask) in self.loadingTasks {
+            loadingTask.cancel()
+            loadingTasks.removeValue(forKey: uuid)
+        }
+    }
+}
