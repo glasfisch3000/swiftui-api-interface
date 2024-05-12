@@ -86,8 +86,11 @@ extension Fetched where Source: FetchableWithConfiguration {
 }
 
 extension Fetched {
-    public var projectedValue: FetchAdapter<Value>? {
-        guard case .value(let value) = self.wrappedValue else { return nil }
-        return .init(wrappedValue: value, refresh: self.refresh)
+    public var projectedValue: FetchStatus<FetchAdapter<Value>> {
+        switch wrappedValue {
+        case .loading: .loading
+        case .error(let error): .error(error)
+        case .value(let value): .value(FetchAdapter(wrappedValue: value, refresh: self.refresh))
+        }
     }
 }
