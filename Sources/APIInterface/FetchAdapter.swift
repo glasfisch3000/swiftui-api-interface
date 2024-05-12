@@ -14,3 +14,10 @@ public struct FetchAdapter<Value>: DynamicProperty {
 extension FetchAdapter {
     public var projectedValue: Self { self }
 }
+
+extension FetchAdapter {
+    public init?(unwrapping other: FetchAdapter<Value?>) {
+        guard let wrappedValue = other.wrappedValue else { return nil }
+        self.init(wrappedValue: wrappedValue, refresh: other.refresh)
+    }
+}
