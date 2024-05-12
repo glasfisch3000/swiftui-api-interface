@@ -4,14 +4,17 @@ import SwiftUI
 public struct Fetched<Source: Fetchable>: DynamicProperty {
     public typealias Value = Source.FetchedValue
     
-    @State private var cachedValue: Value? = nil
-    @State private var error: Error? = nil
-    @State private var loadingTasks: [UUID: Task<Value, Error>] = [:]
+    @State private var cachedValue: Value?
+    @State private var error: Error?
+    @State private var loadingTasks: [UUID: Task<Value, Error>]
     
     public var source: Source
     
     public init(source: Source) {
         self.source = source
+        self._cachedValue = State(initialValue: nil)
+        self._error = State(initialValue: nil)
+        self._loadingTasks = State(initialValue: [:])
     }
     
     public var wrappedValue: FetchStatus<Value> {
