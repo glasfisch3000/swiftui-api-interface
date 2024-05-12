@@ -84,3 +84,10 @@ extension Fetched where Source: FetchableWithConfiguration {
         loadingTasks.removeValue(forKey: uuid)
     }
 }
+
+extension Fetched {
+    public var projectedValue: FetchAdapter<Value>? {
+        guard case .value(let value) = self.wrappedValue else { return nil }
+        return .init(wrappedValue: value, refresh: self.refresh)
+    }
+}
