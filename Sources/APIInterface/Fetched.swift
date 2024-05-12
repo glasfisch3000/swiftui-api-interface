@@ -24,6 +24,14 @@ public struct Fetched<Source: Fetchable>: DynamicProperty {
         }
     }
     
+    public var projectedValue: FetchStatus<FetchAdapter<Value>> {
+        switch wrappedValue {
+        case .loading: .loading
+        case .error(let error): .error(error)
+        case .value(let value): .value(FetchAdapter(wrappedValue: value, refresh: self.refresh))
+        }
+    }
+    
     public var isLoading: Bool {
         !loadingTasks.isEmpty
     }
@@ -82,15 +90,5 @@ extension Fetched where Source: FetchableWithConfiguration {
         
         // remove task from registry
         loadingTasks.removeValue(forKey: uuid)
-    }
-}
-
-extension Fetched {
-    public var projectedValue: FetchStatus<FetchAdapter<Value>> {
-        switch wrappedValue {
-        case .loading: .loading
-        case .error(let error): .error(error)
-        case .value(let value): .value(FetchAdapter(wrappedValue: value, refresh: self.refresh))
-        }
     }
 }
