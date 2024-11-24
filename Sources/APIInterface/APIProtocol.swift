@@ -1,7 +1,7 @@
-public protocol APIProtocol {
-    associatedtype APIError: Error
-    associatedtype Request
-    associatedtype Response
+public protocol APIProtocol: Sendable {
+    associatedtype APIError: Error, Sendable
+    associatedtype Request: Sendable
+    associatedtype Response: Sendable
     
     // api contains methods/vars for retrieving fetchables
     

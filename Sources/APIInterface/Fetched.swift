@@ -7,7 +7,7 @@ import SwiftUI
 /// > However, this is intended only for global errors, like connection problems or missing authentication.
 /// > Once an API response is retrieved, any problems it causes should be handled separetely. If, for instance, decoding the response can produce errors, consider using a `Result` as `Value`.
 @propertyWrapper
-public struct Fetched<API, Value>: DynamicProperty where API: APIProtocol {
+public struct Fetched<API, Value>: DynamicProperty, Sendable where API: APIProtocol, Value: Sendable {
     /// The API endpoint to load data from.
     public var api: API
     
@@ -15,12 +15,12 @@ public struct Fetched<API, Value>: DynamicProperty where API: APIProtocol {
     public var request: API.Request
     
     /// The function used to decode a value/failure result from an API response.
-    public var decodeResult: (API.Response) -> Value
+    public var decodeResult: @Sendable (API.Response) -> Value
     
     @State private var cachedValue: Result<Value, API.APIError>? = nil
     @State private var loadingTask: Task<Value, Error>? = nil
     
-    public init(api: API, request: API.Request, decodeResult: @escaping (API.Response) -> Value) {
+    public init(api: API, request: API.Request, decodeResult: @escaping @Sendable (API.Response) -> Value) {
         self.api = api
         self.request = request
         self.decodeResult = decodeResult
