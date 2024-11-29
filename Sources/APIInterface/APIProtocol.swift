@@ -14,5 +14,5 @@ public protocol APIErrorProtocol: Error, Sendable {
 }
 
 extension APIErrorProtocol {
-    var shouldReport: Bool { true }
+    public var shouldReport: Bool { true }
 }
