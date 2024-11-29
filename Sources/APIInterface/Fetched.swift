@@ -9,7 +9,7 @@ import SwiftUI
 @propertyWrapper
 public struct Fetched<API, Value>: DynamicProperty, Sendable where API: APIProtocol, Value: Sendable {
     /// The API endpoint to load data from.
-    public var api: API
+    @Binding public var api: API
     
     /// The data used to request a result from the API.
     public var request: API.Request
@@ -20,8 +20,8 @@ public struct Fetched<API, Value>: DynamicProperty, Sendable where API: APIProto
     @State private var cachedValue: Result<Value, API.APIError>? = nil
     @State private var loadingTask: Task<Value, Error>? = nil
     
-    public init(api: API, request: API.Request, decodeResult: @escaping @Sendable (API.Response) -> Value) {
-        self.api = api
+    public init(api: Binding<API>, request: API.Request, decodeResult: @escaping @Sendable (API.Response) -> Value) {
+        self._api = api
         self.request = request
         self.decodeResult = decodeResult
     }
@@ -75,7 +75,7 @@ public struct Fetched<API, Value>: DynamicProperty, Sendable where API: APIProto
         case .success(let result):
             self.cachedValue = .success(result)
         case .failure(let error as API.APIError):
-            await self.api.reportError(error)
+            if error.shouldReport { await self.api.reportError(error) }
             self.cachedValue = .failure(error)
         case .failure(_ as CancellationError):
             // if the loading task is cancelled, leave the cached value as it is
@@ -105,7 +105,7 @@ public struct Fetched<API, Value>: DynamicProperty, Sendable where API: APIProto
             case .success(let result):
                 self.cachedValue = .success(result)
             case .failure(let error as API.APIError):
-                await self.api.reportError(error)
+                if error.shouldReport { await self.api.reportError(error) }
                 self.cachedValue = .failure(error)
             case .failure(_ as CancellationError):
                 // we ain't cancelling shit let's go again
