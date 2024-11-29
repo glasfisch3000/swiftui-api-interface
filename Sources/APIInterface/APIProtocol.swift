@@ -12,3 +12,7 @@ public protocol APIProtocol: Sendable {
 public protocol APIErrorProtocol: Error, Sendable {
     var shouldReport: Bool { get }
 }
+
+extension APIErrorProtocol {
+    var shouldReport: Bool { true }
+}
