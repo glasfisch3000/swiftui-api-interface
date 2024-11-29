@@ -75,7 +75,7 @@ public struct Fetched<API, Value>: DynamicProperty, Sendable where API: APIProto
         case .success(let result):
             self.cachedValue = .success(result)
         case .failure(let error as API.APIError):
-            self.api.reportError(error)
+            await self.api.reportError(error)
             self.cachedValue = .failure(error)
         case .failure(_ as CancellationError):
             // if the loading task is cancelled, leave the cached value as it is
@@ -105,7 +105,7 @@ public struct Fetched<API, Value>: DynamicProperty, Sendable where API: APIProto
             case .success(let result):
                 self.cachedValue = .success(result)
             case .failure(let error as API.APIError):
-                self.api.reportError(error)
+                await self.api.reportError(error)
                 self.cachedValue = .failure(error)
             case .failure(_ as CancellationError):
                 // we ain't cancelling shit let's go again
