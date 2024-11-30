@@ -6,7 +6,7 @@ public protocol APIProtocol: Sendable {
     // api contains methods/vars for retrieving fetchables
     
     func makeRequest(_ request: Request) async throws(APIError) -> Response
-    mutating func reportError(_ apiError: APIError) async
+    func reportError(_ apiError: APIError) async
 }
 
 public protocol APIErrorProtocol: Error, Sendable {
