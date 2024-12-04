@@ -6,32 +6,29 @@ import SwiftUI
 /// > Any error thrown there will be reported to that API.
 /// > However, this is intended only for global errors, like connection problems or missing authentication.
 /// > Once an API response is retrieved, any problems it causes should be handled separetely. If, for instance, decoding the response can produce errors, consider using a `Result` as `Value`.
-@propertyWrapper
-public struct Fetched<API, Value>: Sendable, DynamicProperty where API: APIProtocol, Value: Sendable {
-    /// The API endpoint to load data from.
-    public var api: API
+public protocol Fetched: Sendable {
+    associatedtype API: APIProtocol
+    associatedtype Value: Sendable
     
-    /// The data used to request a result from the API.
-    public var request: API.Request
+    /// The API endpoint to load data from.
+    var api: API { get }
     
     /// The function used to decode a value/failure result from an API response.
-    public var decodeResult: @Sendable (API.Response) -> Value
+    var request: API.Request { get }
+    func decodeResult(_ response: API.Response) -> Value
     
-    @State private var cachedValue: Result<Value, API.APIError>? = nil
-    @State private var loadingTask: Task<Value, Error>? = nil
-    
-    public init(api: API, request: API.Request, decodeResult: @escaping @Sendable (API.Response) -> Value) {
-        self.api = api
-        self.request = request
-        self.decodeResult = decodeResult
-    }
+    var cachedValue: Result<Value, API.APIError>? { get nonmutating set }
+    var loadingTask: Task<Value, Error>? { get nonmutating set }
+}
+
+extension Fetched {
+    /// A reference to the `Fetched` object itself.
+    public var projectedValue: Self { self }
     
     /// The resulting value from the last load action, if any.
     public var wrappedValue: Value? {
         try? self.cachedValue?.get()
     }
-    
-    public var projectedValue: Self { self }
     
     /// The API error that occurred during the last load action, if any.
     public var apiError: API.APIError? {
@@ -46,9 +43,13 @@ public struct Fetched<API, Value>: Sendable, DynamicProperty where API: APIProto
     public var isLoading: Bool {
         !(self.loadingTask?.isCancelled ?? true)
     }
-    
+}
+
+extension Fetched {
+    /// Requests and decodes a new value.
+    /// - Throws: An instance of `API.APIError`, if any.
     @Sendable
-    private func loadValue() async throws(API.APIError) -> Value {
+    public func loadValue() async throws(API.APIError) -> Value {
         let response = try await api.makeRequest(self.request)
         return self.decodeResult(response)
     }
@@ -111,7 +112,7 @@ public struct Fetched<API, Value>: Sendable, DynamicProperty where API: APIProto
                 // we ain't cancelling shit let's go again
                 self.update()
             case .failure(let error):
-                // this shouldn't be possible so we propagate the error so it can be immediately discarded
+                // this shouldn't be possible so we propagate the error so the next level can deal with it
                 throw error
             }
         }
