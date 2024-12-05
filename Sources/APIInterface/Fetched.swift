@@ -6,7 +6,7 @@ import SwiftUI
 /// > Any error thrown there will be reported to that API.
 /// > However, this is intended only for global errors, like connection problems or missing authentication.
 /// > Once an API response is retrieved, any problems it causes should be handled separetely. If, for instance, decoding the response can produce errors, consider using a `Result` as `Value`.
-public protocol Fetched: Sendable {
+public protocol Fetched: Sendable, DynamicProperty {
     associatedtype API: APIProtocol
     associatedtype Value: Sendable
     
