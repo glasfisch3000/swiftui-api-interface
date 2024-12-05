@@ -6,23 +6,26 @@ import SwiftUI
 /// > Any error thrown there will be reported to that API.
 /// > However, this is intended only for global errors, like connection problems or missing authentication.
 /// > Once an API response is retrieved, any problems it causes should be handled separetely. If, for instance, decoding the response can produce errors, consider using a `Result` as `Value`.
-public protocol Fetched: DynamicProperty {
-    associatedtype API: APIProtocol
-    associatedtype Value: Sendable
-    
+public struct Fetched<API, Value>: Sendable, DynamicProperty where API: APIProtocol, Value: Sendable {
     /// The API endpoint to load data from.
-    var api: API { get }
+    public var api: API
+    
+    /// The data used to request a result from the API.
+    public var request: API.Request
     
     /// The function used to decode a value/failure result from an API response.
-    var request: API.Request { get }
-    func decodeResult(_ response: API.Response) -> Value
+    public var decodeResult: @Sendable (API.Response) -> Value
     
-    var cachedValue: Result<Value, API.APIError>? { get nonmutating set }
-    var loadingTask: Task<Value, Error>? { get nonmutating set }
-}
-
-extension Fetched {
-    /// A reference to the `Fetched` object itself.
+    @State public var cachedValue: Result<Value, API.APIError>?
+    @State public var loadingTask: Task<Value, Error>?
+    
+    public init(api: API, request: API.Request, decodeResult: @Sendable @escaping (API.Response) -> Value) {
+        self.api = api
+        self.request = request
+        self.decodeResult = decodeResult
+    }
+    
+    /// A reference to the `Fetched` struct itself.
     public var projectedValue: Self { self }
     
     /// The resulting value from the last load action, if any.
