@@ -14,16 +14,17 @@ public struct Fetched<API, Value>: Sendable, DynamicProperty where API: APIProto
     /// The data used to request a result from the API.
     public var request: API.Request
     
-    /// The function used to decode a value/failure result from an API response.
-    public var decodeResult: @Sendable (API.Response) -> Value
+    /// This function is used to request a new value from the api, using the supplied API endpoint and request value.
+    /// - Throws: An instance of `API.APIError`, if any.
+    public var fetchValue: @Sendable (API, API.Request) async throws(API.APIError) -> Value
     
     @State public var cachedValue: Result<Value, API.APIError>?
-    @State public var loadingTask: Task<Value, Error>?
+    @State public var loadingTask: Task<Result<Value, API.APIError>, Never>?
     
-    public init(api: API, request: API.Request, decodeResult: @Sendable @escaping (API.Response) -> Value) {
+    public init(api: API, request: API.Request, fetchValue: @Sendable @escaping (API, API.Request) async throws(API.APIError) -> Value) {
         self.api = api
         self.request = request
-        self.decodeResult = decodeResult
+        self.fetchValue = fetchValue
     }
     
     /// A reference to the `Fetched` struct itself.
@@ -50,14 +51,6 @@ public struct Fetched<API, Value>: Sendable, DynamicProperty where API: APIProto
 }
 
 extension Fetched {
-    /// Requests and decodes a new value.
-    /// - Throws: An instance of `API.APIError`, if any.
-    @Sendable
-    public func loadValue() async throws(API.APIError) -> Value {
-        let response = try await api.makeRequest(self.request)
-        return self.decodeResult(response)
-    }
-    
     /// Re-load the cached value.
     /// - Parameter force: Cancel any running load action and force a new one.
     /// - Throws: This function should never actually throw, although the compiler doesn't see it. You should be safe to discard any errors thrown from here.
@@ -73,22 +66,21 @@ extension Fetched {
             }
         }
         
-        let task = Task<Value, Error>(operation: self.loadValue)
+        let task = Task<Result<Value, API.APIError>, Never> {
+            do throws(API.APIError) {
+                return .success(try await self.fetchValue(api, request))
+            } catch {
+                return .failure(error)
+            }
+        }
         self.loadingTask = task
         
-        switch await task.result {
-        case .success(let result):
-            self.cachedValue = .success(result)
-        case .failure(let error as API.APIError):
-            if error.shouldReport { await self.api.reportError(error) }
-            self.cachedValue = .failure(error)
-        case .failure(_ as CancellationError):
-            // if the loading task is cancelled, leave the cached value as it is
-            break
-        case .failure(let error):
-            // this shouldn't be possible!
-            // anyway, errors are propagated so the caller can ignore them
-            throw error
+        switch await task.value {
+        case .success(let value):
+            self.cachedValue = .success(value)
+        case .failure(let apiError):
+            if apiError.shouldReport { await self.api.reportError(apiError) }
+            self.cachedValue = .failure(apiError)
         }
     }
     
@@ -103,21 +95,21 @@ extension Fetched {
         guard self.cachedValue == nil else { return }
         
         Task {
-            let task = Task<Value, Error>(operation: self.loadValue)
+            let task = Task<Result<Value, API.APIError>, Never> {
+                do throws(API.APIError) {
+                    return .success(try await self.fetchValue(api, request))
+                } catch {
+                    return .failure(error)
+                }
+            }
             self.loadingTask = task
             
-            switch await task.result {
-            case .success(let result):
-                self.cachedValue = .success(result)
-            case .failure(let error as API.APIError):
-                if error.shouldReport { await self.api.reportError(error) }
-                self.cachedValue = .failure(error)
-            case .failure(_ as CancellationError):
-                // we ain't cancelling shit let's go again
-                self.update()
-            case .failure(let error):
-                // this shouldn't be possible so we propagate the error so the next level can deal with it
-                throw error
+            switch await task.value {
+            case .success(let value):
+                self.cachedValue = .success(value)
+            case .failure(let apiError):
+                if apiError.shouldReport { await self.api.reportError(apiError) }
+                self.cachedValue = .failure(apiError)
             }
         }
     }

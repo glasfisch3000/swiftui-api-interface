@@ -9,12 +9,13 @@ public protocol APIProtocol: Sendable {
     func reportError(_ apiError: APIError) async
 }
 
-public protocol APIErrorProtocol: Error, Sendable {
-    /// Whether or not the error should be reported to the API object on occurring.
-    var shouldReport: Bool { get }
-}
-
-extension APIErrorProtocol {
-    /// Whether or not the error should be reported to the API object on occurring.
-    public var shouldReport: Bool { true }
+extension APIProtocol {
+    public func makeRequest<Value: Sendable>(
+        _ request: Request,
+        as type: Value.Type = Value.self,
+        using transform: @Sendable @escaping (Response) throws(APIError) -> Value
+    ) async throws(APIError) -> Value {
+        let response = try await self.makeRequest(request)
+        return try transform(response)
+    }
 }
