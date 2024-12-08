@@ -28,14 +28,17 @@ public struct Fetched<API, Value>: Sendable, DynamicProperty where API: APIProto
     }
     
     /// A reference to the `Fetched` struct itself.
+    @inlinable
     public var projectedValue: Self { self }
     
     /// The resulting value from the last load action, if any.
+    @inlinable
     public var wrappedValue: Value? {
         try? self.cachedValue?.get()
     }
     
     /// The API error that occurred during the last load action, if any.
+    @inlinable
     public var apiError: API.APIError? {
         switch self.cachedValue {
         case nil: nil
@@ -45,6 +48,7 @@ public struct Fetched<API, Value>: Sendable, DynamicProperty where API: APIProto
     }
     
     /// Indicates whether the value is currently being loaded from source.
+    @inlinable
     public var isLoading: Bool {
         !(self.loadingTask?.isCancelled ?? true)
     }
