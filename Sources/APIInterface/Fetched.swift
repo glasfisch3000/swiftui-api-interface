@@ -79,7 +79,10 @@ extension Fetched {
         }
         self.loadingTask = task
         
-        switch await task.value {
+        let value = await task.value
+        if self.loadingTask == task { self.loadingTask = nil }
+        
+        switch value {
         case .success(let value):
             self.cachedValue = .success(value)
         case .failure(let apiError):
@@ -108,7 +111,10 @@ extension Fetched {
             }
             self.loadingTask = task
             
-            switch await task.value {
+            let value = await task.value
+            if self.loadingTask == task { self.loadingTask = nil }
+            
+            switch value {
             case .success(let value):
                 self.cachedValue = .success(value)
             case .failure(let apiError):
