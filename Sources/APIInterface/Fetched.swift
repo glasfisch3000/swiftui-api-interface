@@ -58,7 +58,7 @@ extension Fetched {
     /// Re-load the cached value.
     /// - Parameter force: Cancel any running load action and force a new one.
     /// - Throws: This function should never actually throw, although the compiler doesn't see it. You should be safe to discard any errors thrown from here.
-    public func reload(force: Bool = false) async throws {
+    public func reload(force: Bool = false) async {
         if let loadingTask = self.loadingTask {
             if force {
                 loadingTask.cancel()
