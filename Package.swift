@@ -8,7 +8,7 @@ let package = Package(
     name: "swiftui-api-interface",
     platforms: [
         .macOS(.v15),
-        .iOS(.v18)
+        .iOS(.v18),
     ],
     products: [
         .library(

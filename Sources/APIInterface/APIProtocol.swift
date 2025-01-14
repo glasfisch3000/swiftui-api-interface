@@ -1,21 +1,10 @@
 public protocol APIProtocol: Sendable {
     associatedtype APIError: APIErrorProtocol
-    associatedtype Request: Sendable
-    associatedtype Response: Sendable
+    associatedtype RawRequest: Sendable
+    associatedtype RawResponse: Sendable
     
     // api contains methods/vars for retrieving fetchables
     
-    func makeRequest(_ request: Request) async throws(APIError) -> Response
+    func makeRequest(_ request: RawRequest) async throws(APIError) -> RawResponse
     func reportError(_ apiError: APIError) async
-}
-
-extension APIProtocol {
-    public func makeRequest<Value: Sendable>(
-        _ request: Request,
-        as type: Value.Type = Value.self,
-        using transform: @Sendable @escaping (Response) throws(APIError) -> Value
-    ) async throws(APIError) -> Value {
-        let response = try await self.makeRequest(request)
-        return try transform(response)
-    }
 }
