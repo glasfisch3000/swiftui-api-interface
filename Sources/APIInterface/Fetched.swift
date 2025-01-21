@@ -77,16 +77,8 @@ extension Fetched {
         }
         self.loadingTask = task
         
-        let value = await task.value
+        self.cachedValue = await task.value
         if self.loadingTask == task { self.loadingTask = nil }
-        
-        switch value {
-        case .success(let value):
-            self.cachedValue = .success(value)
-        case .failure(let apiError):
-            if apiError.shouldReport { await self.api.reportError(apiError) }
-            self.cachedValue = .failure(apiError)
-        }
     }
     
     /// Inherited from `DynamicProperty.update()`.
