@@ -1,6 +1,6 @@
 import SwiftUI
 
-public struct FetchedView<API: APIProtocol, Request: APIRequest, ErrorContent: View, LoadingContent: View, Content: View>: View where Request.API == API {
+public struct FetchedView<API: APIProtocol, Request: APIRequestProtocol, ErrorContent: View, LoadingContent: View, Content: View>: View where Request.API == API {
     @Fetched<API, Request> public var fetched: Request.Response?
     
     @ViewBuilder public var error: (API.APIError) -> ErrorContent

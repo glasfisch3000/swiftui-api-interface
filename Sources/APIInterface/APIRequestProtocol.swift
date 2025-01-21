@@ -1,4 +1,4 @@
-public protocol APIRequest: Sendable {
+public protocol APIRequestProtocol: Sendable {
     associatedtype API: APIProtocol
     associatedtype Response: Sendable
     
@@ -9,7 +9,7 @@ public protocol APIRequest: Sendable {
     func decodeRawResponse(_ data: API.RawResponse) -> Response
 }
 
-public protocol ThrowingAPIRequest: APIRequest where Response == Result<Value, Failure> {
+public protocol ThrowingAPIRequestProtocol: APIRequestProtocol where Response == Result<Value, Failure> {
     associatedtype Value: Sendable
     associatedtype Failure: Sendable, Error
     
@@ -17,7 +17,7 @@ public protocol ThrowingAPIRequest: APIRequest where Response == Result<Value, F
     func decodeThrowingRawResponse(_ data: API.RawResponse) throws(Failure) -> Value
 }
 
-extension ThrowingAPIRequest {
+extension ThrowingAPIRequestProtocol {
     public func decodeRawResponse(_ data: API.RawResponse) -> Response {
         do throws(Failure) {
             return .success(try decodeThrowingRawResponse(data))
@@ -27,7 +27,7 @@ extension ThrowingAPIRequest {
     }
 }
 
-extension APIRequest {
+extension APIRequestProtocol {
     public func run(on api: API) async throws(API.APIError) -> Response {
         let request = self.makeRawRequest()
         let response = try await api.makeRequest(request)

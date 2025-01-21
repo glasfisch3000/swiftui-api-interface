@@ -7,7 +7,7 @@ import SwiftUI
 /// > However, this is intended only for global errors, like connection problems or missing authentication.
 /// > Once an API response is retrieved, any problems it causes should be handled separetely. If, for instance, decoding the response can produce errors, consider using a `Result` as `Value`.
 @propertyWrapper
-public struct Fetched<API: APIProtocol, Request: APIRequest>: Sendable, DynamicProperty where Request.API == API {
+public struct Fetched<API: APIProtocol, Request: APIRequestProtocol>: Sendable, DynamicProperty where Request.API == API {
     /// The API endpoint to load data from.
     public var api: API
     
