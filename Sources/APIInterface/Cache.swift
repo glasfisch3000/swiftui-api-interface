@@ -4,17 +4,17 @@ import SwiftUI
 @MainActor
 @Observable
 public class Cache<API: APIProtocol, Model: ModelProtocol, ListRequest: APIListRequestProtocol<API, Model>, FindRequest: APIFindRequestProtocol<API, Model>> {
-    public struct Status {
-        var value: Model?
-        var loading: Bool
+    public struct Entry {
+        public var value: Model?
+        public var loading: Bool
         
-        init(value: Model? = nil, loading: Bool = false) {
+        public init(value: Model? = nil, loading: Bool = false) {
             self.value = value
             self.loading = loading
         }
     }
     
-    var api: API
+    public var api: API
     
     var cachedValues: [UUID: Model]
     var listFailure: ListRequest.Failure?
@@ -25,10 +25,6 @@ public class Cache<API: APIProtocol, Model: ModelProtocol, ListRequest: APIListR
     public init(api: API, listRequest: ListRequest.Type = ListRequest.self, findRequest: FindRequest.Type = FindRequest.self) {
         self.api = api
         self.cachedValues = [:]
-    }
-    
-    public subscript(id: UUID) -> Status {
-        .init(value: cachedValues[id], loading: listOperation != nil || findOperations[id] != nil)
     }
 }
 
@@ -49,6 +45,20 @@ struct APIOperation<Request: APIRequestProtocol>: Sendable {
 }
 
 extension Cache {
+    public var isLoading: Bool { listOperation != nil }
+    
+    public var models: Result<[Model], ListRequest.Failure> {
+        if let listFailure = listFailure {
+            return .failure(listFailure)
+        }
+        
+        return .success(cachedValues.values.map(\.self))
+    }
+    
+    public subscript(id: UUID) -> Entry {
+        .init(value: cachedValues[id], loading: listOperation != nil || findOperations[id] != nil)
+    }
+    
     public func load() async {
         guard listOperation == nil else { return }
         

@@ -18,7 +18,7 @@ public protocol ModelProperties: Sendable, Decodable {
 }
 
 extension ModelProperties {
-    func encode() -> [String: QueryEncodable] {
+    public func encode() -> [String: QueryEncodable] {
         var result: [String: QueryEncodable] = [:]
         
         for (label, value) in Mirror(reflecting: self).children {
