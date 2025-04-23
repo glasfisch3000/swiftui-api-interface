@@ -53,7 +53,7 @@ public protocol HTTPFindRequest<Model>: APIFindRequestProtocol, HTTPRequest wher
 extension HTTPFindRequest {
     public var path: [String] { [Model.scheme, id.uuidString] }
     public var method: HTTPMethod { .GET }
-    public var query: [String : String?] { [:] }
+    public var query: [String : QueryEncodable?] { [:] }
 }
 
 
@@ -67,7 +67,7 @@ extension HTTPCreateRequest {
     
     public var path: [String] { [Model.scheme] }
     public var method: HTTPMethod { .POST }
-    public var query: [String : String?] { self.properties.encodeQuery().mapValues(\.asQueryString) }
+    public var query: [String : QueryEncodable?] { self.properties.encodeQuery() }
 }
 
 
@@ -81,7 +81,7 @@ extension HTTPUpdateRequest {
     
     public var path: [String] { [Model.scheme, id.uuidString] }
     public var method: HTTPMethod { .PATCH }
-    public var query: [String : String?] { properties.encodeQuery().mapValues(\.asQueryString) }
+    public var query: [String : QueryEncodable?] { properties.encodeQuery() }
 }
 
 
@@ -90,5 +90,5 @@ public protocol HTTPDeleteRequest<Model>: APIDeleteRequestProtocol, HTTPRequest 
 extension HTTPDeleteRequest {
     public var path: [String] { [Model.scheme, id.uuidString] }
     public var method: HTTPMethod { .DELETE }
-    public var query: [String : String?] { [:] }
+    public var query: [String : QueryEncodable?] { [:] }
 }
