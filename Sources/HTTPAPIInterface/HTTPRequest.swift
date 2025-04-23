@@ -65,6 +65,8 @@ extension HTTPCreateRequest {
         self.init(properties: model.properties)
     }
     
+    public var path: [String] { [Model.scheme] }
+    public var method: HTTPMethod { .POST }
     public var query: [String : String?] { self.properties.encodeQuery().mapValues(\.asQueryString) }
 }
 
