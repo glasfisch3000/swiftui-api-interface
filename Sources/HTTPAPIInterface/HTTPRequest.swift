@@ -10,7 +10,7 @@ public protocol HTTPRequest<Response>: APIRequestProtocol where API: HTTPAPI, Fa
 }
 
 extension HTTPRequest {
-    func makeRawRequest() -> HTTPAPI.RawRequest {
+    public func makeRawRequest() -> HTTPAPI.RawRequest {
         HTTPAPI.RawRequest(method: self.method,
                            path: self.path,
                            query: self.query.compactMapValues { $0?.asQueryString })
@@ -18,7 +18,7 @@ extension HTTPRequest {
 }
 
 extension HTTPRequest where Response: Decodable {
-    func decodeRawResponse(_ data: HTTPAPI.RawResponse) throws(Failure) -> Response {
+    public func decodeRawResponse(_ data: HTTPAPI.RawResponse) throws(Failure) -> Response {
         do {
             return try Response(from: data)
         } catch {
@@ -42,31 +42,30 @@ public protocol HTTPWritableRequestSuite<API, Model>: HTTPRequestSuite, APIWrita
 public protocol HTTPListRequest<Model>: APIListRequestProtocol, HTTPRequest where API: HTTPAPI, Response == [ModelCodingContainer<Model>], Failure: HTTPRequestFailure { }
 
 extension HTTPListRequest {
-    var method: HTTPMethod { .GET }
-    var path: [String] { [Model.scheme] }
-    var query: [String : QueryEncodable?] { [:] }
+    public var method: HTTPMethod { .GET }
+    public var path: [String] { [Model.scheme] }
+    public var query: [String : QueryEncodable?] { [:] }
 }
 
 
 public protocol HTTPFindRequest<Model>: APIFindRequestProtocol, HTTPRequest where API: HTTPAPI, Response == ModelCodingContainer<Model>, Failure: HTTPRequestFailure { }
 
 extension HTTPFindRequest {
-    var path: [String] { [Model.scheme, id.uuidString] }
-    var method: HTTPMethod { .GET }
-    var query: [String : String?] { [:] }
+    public var path: [String] { [Model.scheme, id.uuidString] }
+    public var method: HTTPMethod { .GET }
+    public var query: [String : String?] { [:] }
 }
 
 
 public protocol HTTPCreateRequest<Model>: APICreateRequestProtocol, HTTPRequest where API: HTTPAPI, Response == ModelCodingContainer<Model>, Failure: HTTPRequestFailure { }
 
 extension HTTPCreateRequest {
-    @MainActor init(model: Model) {
+    @MainActor
+    public init(model: Model) {
         self.init(properties: model.properties)
     }
     
-    var path: [String] { [Model.scheme] }
-    var method: HTTPMethod { .POST }
-    var query: [String : String?] { self.properties.encodeQuery().mapValues(\.asQueryString) }
+    public var query: [String : String?] { self.properties.encodeQuery().mapValues(\.asQueryString) }
 }
 
 
@@ -74,20 +73,20 @@ public protocol HTTPUpdateRequest<Model>: APIUpdateRequestProtocol, HTTPRequest 
 
 extension HTTPUpdateRequest {
     @MainActor
-    init(model: Model) {
+    public init(model: Model) {
         self.init(id: model.id, properties: model.properties)
     }
     
-    var path: [String] { [Model.scheme, id.uuidString] }
-    var method: HTTPMethod { .PATCH }
-    var query: [String : String?] { properties.encodeQuery().mapValues(\.asQueryString) }
+    public var path: [String] { [Model.scheme, id.uuidString] }
+    public var method: HTTPMethod { .PATCH }
+    public var query: [String : String?] { properties.encodeQuery().mapValues(\.asQueryString) }
 }
 
 
 public protocol HTTPDeleteRequest<Model>: APIDeleteRequestProtocol, HTTPRequest where API: HTTPAPI, Response == UUID, Failure: HTTPRequestFailure { }
 
 extension HTTPDeleteRequest {
-    var path: [String] { [Model.scheme, id.uuidString] }
-    var method: HTTPMethod { .DELETE }
-    var query: [String : String?] { [:] }
+    public var path: [String] { [Model.scheme, id.uuidString] }
+    public var method: HTTPMethod { .DELETE }
+    public var query: [String : String?] { [:] }
 }
