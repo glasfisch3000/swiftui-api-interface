@@ -80,6 +80,7 @@ extension Cache {
             for (id, properties) in containers {
                 if let model = self.cachedValues[id] {
                     model.properties = properties
+                    model.lastUpdated = .now
                 } else {
                     self.cachedValues[id] = Model(id: id, properties: properties)
                 }
@@ -103,6 +104,7 @@ extension Cache {
         let operation = findOperations[id] ?? FindOperation(.init(id: id), on: api) { container in
             if let model = self.cachedValues[id] {
                 model.properties = container.properties
+                model.lastUpdated = .now
                 return model
             } else {
                 let model = Model(id: id, properties: container.properties)

@@ -34,6 +34,7 @@ public class WritableCache<API: APIProtocol, Model: ModelProtocol, Request: APIW
         let operation = UpdateOperation(.init(id: id, properties: properties), on: api) { container in
             if let model = self.cachedValues[container.id] {
                 model.properties = container.properties
+                model.lastUpdated = .now
                 return model
             } else {
                 let model = Model(id: container.id, properties: container.properties)
