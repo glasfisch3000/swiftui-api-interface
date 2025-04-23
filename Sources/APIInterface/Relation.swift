@@ -1,7 +1,8 @@
 import Foundation
 
 @propertyWrapper
-public struct Relation<Parent: ModelProtocol, Child: ModelProtocol, Request: APIRequestSuite>: Sendable where Request.Model == Child {
+public struct Relation<Parent: ModelProtocol, Request: APIRequestSuite>: Sendable {
+    public typealias Child = Request.Model
     public typealias ChildCache = Cache<Request.API, Child, Request>
     
     public var parent: Parent!
