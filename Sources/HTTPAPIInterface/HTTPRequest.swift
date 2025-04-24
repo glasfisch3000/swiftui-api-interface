@@ -3,7 +3,7 @@ import APIInterface
 import Foundation
 import NIOHTTP1
 
-public protocol HTTPRequest<Response>: APIRequest where API: HTTPAPI, Failure: HTTPRequestFailure {
+public protocol HTTPRequest<Response>: APIRequest where API: HTTPAPI {
     var method: HTTPMethod { get }
     var path: [String] { get }
     var query: [String: QueryEncodable?] { get }
@@ -17,7 +17,7 @@ extension HTTPRequest {
     }
 }
 
-extension HTTPRequest where Response: Decodable {
+extension HTTPRequest where Response: Decodable, Failure: HTTPRequestFailure {
     public func decodeRawResponse(_ data: HTTPAPI.RawResponse) throws(Failure) -> Response {
         do {
             return try Response(from: data)
