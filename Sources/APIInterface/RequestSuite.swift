@@ -1,40 +1,39 @@
 import Foundation
 
-public protocol APIRequestSuite<API, Model> {
-    associatedtype API: APIProtocol
+public protocol APIRequestSuite<API, Model>: APIRequest {
     associatedtype Model: ModelProtocol
     
-    associatedtype List: APIListRequestProtocol<API, Model>
-    associatedtype Find: APIFindRequestProtocol<API, Model>
+    associatedtype List: APIListRequest<API, Model> where List.Parent == Self
+    associatedtype Find: APIFindRequest<API, Model> where Find.Parent == Self
 }
 
 public protocol APIWritableRequestSuite<API, Model>: APIRequestSuite {
-    associatedtype Create: APICreateRequestProtocol<API, Model>
-    associatedtype Update: APIUpdateRequestProtocol<API, Model>
-    associatedtype Delete: APIDeleteRequestProtocol<API, Model>
+    associatedtype Create: APICreateRequest<API, Model> where Create.Parent == Self
+    associatedtype Update: APIUpdateRequest<API, Model> where Update.Parent == Self
+    associatedtype Delete: APIDeleteRequest<API, Model> where Delete.Parent == Self
 }
 
 
 extension APIRequestSuite {
     public func list() -> List {
-        .init()
+        .init(parent: self)
     }
     
     public func find(id: UUID) -> Find {
-        .init(id: id)
+        .init(id: id, parent: self)
     }
 }
 
 extension APIWritableRequestSuite {
     public func create(properties: Model.Properties) -> Create {
-        .init(properties: properties)
+        .init(properties: properties, parent: self)
     }
     
     public func update(id: UUID, properties: Model.Properties) -> Update {
-        .init(id: id, properties: properties)
+        .init(id: id, properties: properties, parent: self)
     }
     
     public func delete(id: UUID) -> Delete {
-        .init(id: id)
+        .init(id: id, parent: self)
     }
 }

@@ -3,7 +3,7 @@ import APIInterface
 import Foundation
 import NIOHTTP1
 
-public protocol HTTPRequest<Response>: APIRequestProtocol where API: HTTPAPI, Failure: HTTPRequestFailure {
+public protocol HTTPRequest<Response>: APIRequest where API: HTTPAPI, Failure: HTTPRequestFailure {
     var method: HTTPMethod { get }
     var path: [String] { get }
     var query: [String: QueryEncodable?] { get }
@@ -35,60 +35,73 @@ public protocol HTTPRequestFailure: Error {
 
 
 
-public protocol HTTPRequestSuite<API, Model>: APIRequestSuite where API: HTTPAPI, List: HTTPListRequest, Find: HTTPFindRequest { }
-public protocol HTTPWritableRequestSuite<API, Model>: HTTPRequestSuite, APIWritableRequestSuite where Create: HTTPCreateRequest, Update: HTTPUpdateRequest, Delete: HTTPDeleteRequest { }
+public protocol HTTPRequestSuite<API, Model>: APIRequestSuite, HTTPRequest
+where API: HTTPAPI, List: HTTPListRequest, Find: HTTPFindRequest { }
+
+public protocol HTTPWritableRequestSuite<API, Model>: HTTPRequestSuite, APIWritableRequestSuite
+where Create: HTTPCreateRequest, Update: HTTPUpdateRequest, Delete: HTTPDeleteRequest { }
 
 
-public protocol HTTPListRequest<Model>: APIListRequestProtocol, HTTPRequest where API: HTTPAPI, Response == [ModelCodingContainer<Model>], Failure: HTTPRequestFailure { }
+
+public protocol HTTPListRequest<Model, Parent>: APIListRequest, HTTPRequest
+where Failure: HTTPRequestFailure, Parent: HTTPRequest { }
 
 extension HTTPListRequest {
     public var method: HTTPMethod { .GET }
-    public var path: [String] { [Model.scheme] }
+    public var path: [String] { parent.path + [Model.scheme] }
     public var query: [String : QueryEncodable?] { [:] }
 }
 
 
-public protocol HTTPFindRequest<Model>: APIFindRequestProtocol, HTTPRequest where API: HTTPAPI, Response == ModelCodingContainer<Model>, Failure: HTTPRequestFailure { }
+
+public protocol HTTPFindRequest<Model, Parent>: APIFindRequest, HTTPRequest
+where Failure: HTTPRequestFailure, Parent: HTTPRequest { }
 
 extension HTTPFindRequest {
-    public var path: [String] { [Model.scheme, id.uuidString] }
+    public var path: [String] { parent.path + [Model.scheme, id.uuidString] }
     public var method: HTTPMethod { .GET }
     public var query: [String : QueryEncodable?] { [:] }
 }
 
 
-public protocol HTTPCreateRequest<Model>: APICreateRequestProtocol, HTTPRequest where API: HTTPAPI, Response == ModelCodingContainer<Model>, Failure: HTTPRequestFailure { }
+
+public protocol HTTPCreateRequest<Model, Parent>: APICreateRequest, HTTPRequest
+where Failure: HTTPRequestFailure, Parent: HTTPRequest { }
 
 extension HTTPCreateRequest {
     @MainActor
-    public init(model: Model) {
-        self.init(properties: model.properties)
+    public init(model: Model, parent: Parent) {
+        self.init(properties: model.properties, parent: parent)
     }
     
-    public var path: [String] { [Model.scheme] }
+    public var path: [String] { parent.path + [Model.scheme] }
     public var method: HTTPMethod { .POST }
     public var query: [String : QueryEncodable?] { self.properties.encodeQuery() }
 }
 
 
-public protocol HTTPUpdateRequest<Model>: APIUpdateRequestProtocol, HTTPRequest where API: HTTPAPI, Response == ModelCodingContainer<Model>, Failure: HTTPRequestFailure { }
+
+public protocol HTTPUpdateRequest<Model>: APIUpdateRequest, HTTPRequest
+where Failure: HTTPRequestFailure, Parent: HTTPRequest { }
 
 extension HTTPUpdateRequest {
     @MainActor
-    public init(model: Model) {
-        self.init(id: model.id, properties: model.properties)
+    public init(model: Model, parent: Parent) {
+        self.init(id: model.id, properties: model.properties, parent: parent)
     }
     
-    public var path: [String] { [Model.scheme, id.uuidString] }
+    public var path: [String] { parent.path + [Model.scheme, id.uuidString] }
     public var method: HTTPMethod { .PATCH }
     public var query: [String : QueryEncodable?] { properties.encodeQuery() }
 }
 
 
-public protocol HTTPDeleteRequest<Model>: APIDeleteRequestProtocol, HTTPRequest where API: HTTPAPI, Response == UUID, Failure: HTTPRequestFailure { }
+
+public protocol HTTPDeleteRequest<Model>: APIDeleteRequest, HTTPRequest
+where Failure: HTTPRequestFailure, Parent: HTTPRequest { }
 
 extension HTTPDeleteRequest {
-    public var path: [String] { [Model.scheme, id.uuidString] }
+    public var path: [String] { parent.path + [Model.scheme, id.uuidString] }
     public var method: HTTPMethod { .DELETE }
     public var query: [String : QueryEncodable?] { [:] }
 }

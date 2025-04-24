@@ -1,6 +1,6 @@
 import Foundation
 
-public protocol APIRequestProtocol: Sendable {
+public protocol APIRequest: Sendable {
     associatedtype API: APIProtocol
     associatedtype Response: Sendable
     associatedtype Failure: Sendable, Error
@@ -12,7 +12,7 @@ public protocol APIRequestProtocol: Sendable {
     func decodeRawResponse(_ data: API.RawResponse) throws(Failure) -> Response
 }
 
-extension APIRequestProtocol {
+extension APIRequest {
     public func run(on api: API) async throws(API.APIError) -> Result<Response, Failure> {
         let request = self.makeRawRequest()
         let response = try await api.makeRequest(request)
@@ -22,37 +22,45 @@ extension APIRequestProtocol {
 
 
 
-public protocol APIListRequestProtocol<API, Model>: APIRequestProtocol where Response == [ModelCodingContainer<Model>] {
-    associatedtype Model: ModelProtocol
+public protocol APINestedRequest<API, Parent>: APIRequest {
+    associatedtype Parent: APIRequest
     
-    init()
+    var parent: Parent { get }
 }
 
-public protocol APIFindRequestProtocol<API, Model>: APIRequestProtocol where Response == ModelCodingContainer<Model> {
+
+
+public protocol APIListRequest<API, Model>: APINestedRequest where Response == [ModelCodingContainer<Model>] {
+    associatedtype Model: ModelProtocol
+    
+    init(parent: Parent)
+}
+
+public protocol APIFindRequest<API, Model>: APINestedRequest where Response == ModelCodingContainer<Model> {
     associatedtype Model: ModelProtocol
     
     var id: UUID { get }
-    init(id: UUID)
+    init(id: UUID, parent: Parent)
 }
 
-public protocol APICreateRequestProtocol<API, Model>: APIRequestProtocol where Response == ModelCodingContainer<Model> {
+public protocol APICreateRequest<API, Model>: APINestedRequest where Response == ModelCodingContainer<Model> {
     associatedtype Model: ModelProtocol
     
     var properties: Model.Properties { get }
-    init(properties: Model.Properties)
+    init(properties: Model.Properties, parent: Parent)
 }
 
-public protocol APIUpdateRequestProtocol<API, Model>: APIRequestProtocol where Response == ModelCodingContainer<Model> {
+public protocol APIUpdateRequest<API, Model>: APINestedRequest where Response == ModelCodingContainer<Model> {
     associatedtype Model: ModelProtocol
     
     var id: UUID { get }
     var properties: Model.Properties { get }
-    init(id: UUID, properties: Model.Properties)
+    init(id: UUID, properties: Model.Properties, parent: Parent)
 }
 
-public protocol APIDeleteRequestProtocol<API, Model>: APIRequestProtocol where Response == UUID {
+public protocol APIDeleteRequest<API, Model>: APINestedRequest where Response == UUID {
     associatedtype Model: ModelProtocol
     
     var id: UUID { get }
-    init(id: UUID)
+    init(id: UUID, parent: Parent)
 }

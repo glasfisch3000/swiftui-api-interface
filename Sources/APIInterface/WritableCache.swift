@@ -12,7 +12,7 @@ public class WritableCache<API: APIProtocol, Model: ModelProtocol, Request: APIW
     typealias DeleteOperation = Operation<UUID, Request.Delete>
     
     public func create(properties: Model.Properties) async throws(API.APIError) -> Result<Model, Request.Create.Failure> {
-        let operation = CreateOperation(.init(properties: properties), on: api) { container in
+        let operation = CreateOperation(suite.create(properties: properties), on: api) { container in
             let model = Model(id: container.id, properties: container.properties)
             self.cachedValues[container.id] = model
             return model
@@ -31,7 +31,7 @@ public class WritableCache<API: APIProtocol, Model: ModelProtocol, Request: APIW
             }
         }
         
-        let operation = UpdateOperation(.init(id: id, properties: properties), on: api) { container in
+        let operation = UpdateOperation(suite.update(id: id, properties: properties), on: api) { container in
             if let model = self.cachedValues[container.id] {
                 model.properties = container.properties
                 model.lastUpdated = .now
@@ -55,7 +55,7 @@ public class WritableCache<API: APIProtocol, Model: ModelProtocol, Request: APIW
     }
     
     public func delete(id: UUID) async throws(API.APIError) -> Result<UUID, Request.Delete.Failure> {
-        let operation = deleteOperations[id] ?? DeleteOperation(.init(id: id), on: api) { id in
+        let operation = deleteOperations[id] ?? DeleteOperation(suite.delete(id: id), on: api) { id in
             self.cachedValues.removeValue(forKey: id)
             return id
         }

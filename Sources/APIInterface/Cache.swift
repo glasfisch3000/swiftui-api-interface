@@ -5,6 +5,7 @@ import SwiftUI
 @Observable
 public class Cache<API: APIProtocol, Model: ModelProtocol, Request: APIRequestSuite<API, Model>> {
     public var api: API
+    public var suite: Request
     
     public var cachedValues: [UUID: Model]
     public var listFailure: Request.List.Failure?
@@ -12,9 +13,10 @@ public class Cache<API: APIProtocol, Model: ModelProtocol, Request: APIRequestSu
     var listOperation: ListOperation? = nil
     var findOperations: [UUID: FindOperation] = [:]
     
-    public init(api: API, request: Request.Type = Request.self) {
+    public init(api: API, requestSuite: Request) {
         self.api = api
         self.cachedValues = [:]
+        self.suite = requestSuite
     }
 }
 
@@ -37,7 +39,7 @@ extension Cache {
 }
 
 extension Cache {
-    struct Operation<Value: Sendable, OperationRequest: APIRequestProtocol>: Equatable, Identifiable where OperationRequest.API == API {
+    struct Operation<Value: Sendable, OperationRequest: APIRequest>: Equatable, Identifiable where OperationRequest.API == API {
         var id = UUID()
         var task: Task<Result<Result<Value, OperationRequest.Failure>, API.APIError>, Never>
         
@@ -65,7 +67,7 @@ extension Cache {
     
     @discardableResult
     public func load() async throws(API.APIError) -> Result<Void, Request.List.Failure> {
-        let operation = listOperation ?? ListOperation(.init(), on: api) { containers in
+        let operation = listOperation ?? ListOperation(suite.list(), on: api) { containers in
             let tuples = containers.map { ($0.id, $0.properties) }
             let containers: [UUID: Model.Properties] = .init(uniqueKeysWithValues: tuples)
             
@@ -101,7 +103,7 @@ extension Cache {
     }
     
     public func fetch(id: UUID) async throws(API.APIError) -> Result<Model, Request.Find.Failure> {
-        let operation = findOperations[id] ?? FindOperation(.init(id: id), on: api) { container in
+        let operation = findOperations[id] ?? FindOperation(suite.find(id: id), on: api) { container in
             if let model = self.cachedValues[id] {
                 model.properties = container.properties
                 model.lastUpdated = .now
