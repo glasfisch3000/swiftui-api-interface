@@ -46,7 +46,7 @@ public final class HTTPAPI: APIProtocol, Sendable {
     }
     
     public let client: HTTPClient
-    public let endpoint: HTTPEndpoint
+    public var endpoint: HTTPEndpoint
     public var credentials: Credentials?
     
     public var options: Options = .default
