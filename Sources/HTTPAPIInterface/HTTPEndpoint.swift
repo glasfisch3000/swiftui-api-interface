@@ -8,6 +8,13 @@ public struct HTTPEndpoint: Sendable {
     public var port: UInt16
     public var path: [String]
     
+    public init(scheme: Scheme, host: String, port: UInt16, path: [String] = []) {
+        self.scheme = scheme
+        self.host = host
+        self.port = port
+        self.path = path
+    }
+    
     public func makeURL(for request: HTTPAPI.RawRequest) -> String {
         let path = (self.path + request.path).joined(separator: "/")
         let query = request.query.compactMap {
