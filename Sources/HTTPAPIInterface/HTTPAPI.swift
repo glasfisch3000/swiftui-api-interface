@@ -28,18 +28,22 @@ public final class HTTPAPI: APIProtocol, Sendable {
         case emptyResponse
         case invalidRequest
         case invalidAuthentication
+        case disallowed
         case clientShutdown
         case httpStatus(HTTPResponseStatus)
         case other
         
         public enum DecodableError: Decodable {
             case invalidQuery
+            case missingAuthentication
             case invalidAuthentication
+            case disallowed
             
             public var asAPIError: APIError {
                 switch self {
                 case .invalidQuery: .invalidRequest
-                case .invalidAuthentication: .invalidAuthentication
+                case .missingAuthentication, .invalidAuthentication: .invalidAuthentication
+                case .disallowed: .disallowed
                 }
             }
         }
