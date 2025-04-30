@@ -33,7 +33,7 @@ public final class HTTPAPI: APIProtocol, Sendable {
         case httpStatus(HTTPResponseStatus)
         case other
         
-        public enum DecodableError: Decodable {
+        public enum DecodableError: String, Decodable {
             case invalidQuery
             case missingAuthentication
             case invalidAuthentication
