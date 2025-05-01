@@ -19,10 +19,15 @@ extension HTTPRequest {
 
 extension HTTPRequest where Response: Decodable, Failure: HTTPRequestFailure {
     public func decodeRawResponse(_ data: HTTPAPI.RawResponse) throws(Failure) -> Response {
-        do {
-            return try Response(from: data)
-        } catch {
-            throw .init(decodingError: error)
+        switch data {
+        case .disallowed: throw .disallowed
+        case .notFound: throw .notFound
+        case .success(let node):
+            do {
+                return try Response(from: node)
+            } catch {
+                throw .decodingError(error)
+            }
         }
     }
 }
@@ -30,7 +35,9 @@ extension HTTPRequest where Response: Decodable, Failure: HTTPRequestFailure {
 
 
 public protocol HTTPRequestFailure: Error {
-    init(decodingError: Error)
+    static var notFound: Self { get }
+    static var disallowed: Self { get }
+    static func decodingError(_ error: Error) -> Self
 }
 
 
