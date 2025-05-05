@@ -7,7 +7,7 @@ import NIOHTTP1
 
 @MainActor
 @Observable
-public final class HTTPAPI: APIProtocol, Sendable {
+public class HTTPAPI: APIProtocol, Sendable {
     public struct RawRequest: Sendable {
         public var method: HTTPMethod
         public var path: [String]
