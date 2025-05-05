@@ -32,6 +32,7 @@ public protocol APINestedRequest<API, Parent>: APIRequest {
 
 public protocol APIListRequest<API, Model>: APINestedRequest where Response == [ModelCodingContainer<Model>] {
     associatedtype Model: ModelProtocol
+    func filterModels(_ models: [UUID: Model]) -> [UUID: Model]
 }
 
 public protocol APIFindRequest<API, Model>: APINestedRequest where Response == ModelCodingContainer<Model> {

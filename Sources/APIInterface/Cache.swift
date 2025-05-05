@@ -10,12 +10,14 @@ public protocol CacheProtocol<Request>: Sendable {
     var api: API { get }
     var suite: Request { get }
     
+    var cachedValues: [UUID: Model] { get }
     var listFailure: Request.List.Failure? { get }
+    
     var isLoading: Bool { get }
     subscript(id: UUID) -> CacheEntry<Request.Find> { get }
     
     @discardableResult
-    func load() async throws(API.APIError) -> Result<Void, Request.List.Failure>
+    func load(request: Request.List?) async throws(API.APIError) -> Result<Void, Request.List.Failure>
     
     @discardableResult
     func fetch(id: UUID) async throws(API.APIError) -> Result<Model, Request.Find.Failure>
@@ -90,8 +92,8 @@ extension Cache {
     typealias FindOperation = Operation<Model, Request.Find>
     
     @discardableResult
-    public func load() async throws(API.APIError) -> Result<Void, Request.List.Failure> {
-        let operation = listOperation ?? ListOperation(suite.list(), on: api) { containers in
+    public func load(request: Request.List? = nil) async throws(API.APIError) -> Result<Void, Request.List.Failure> {
+        let operation = listOperation ?? ListOperation(request ?? suite.list(), on: api) { containers in
             let tuples = containers.map { ($0.id, $0.properties) }
             let containers: [UUID: Model.Properties] = .init(uniqueKeysWithValues: tuples)
             
