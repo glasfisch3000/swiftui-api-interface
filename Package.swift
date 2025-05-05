@@ -26,7 +26,6 @@ let package = Package(
             dependencies: [
                 .target(name: "APIInterface"),
                 .product(name: "AsyncHTTPClient", package: "async-http-client"),
-                .product(name: "JSONLegacy", package: "swift-json"),
             ]
         ),
     ]

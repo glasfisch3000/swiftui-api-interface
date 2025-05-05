@@ -4,8 +4,6 @@ import SwiftUI
 import AsyncHTTPClient
 import NIOCore
 import NIOHTTP1
-import JSON
-import JSONLegacy
 
 @MainActor
 @Observable

@@ -1,5 +1,5 @@
 {
-  "originHash" : "968126b991e96f01f3ce04233668d14053f8fbf3db29a6679335416c684e4e4b",
+  "originHash" : "c8a547aedb1a645567911824b7bea359cec452788fde4630b6ea606ebb0608f1",
   "pins" : [
     {
       "identity" : "async-http-client",
@@ -38,15 +38,6 @@
       }
     },
     {
-      "identity" : "swift-grammar",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/tayloraswift/swift-grammar",
-      "state" : {
-        "revision" : "0dac977b50bf677b2c3adabd7d5586a7b6e09b17",
-        "version" : "0.5.0"
-      }
-    },
-    {
       "identity" : "swift-http-structured-headers",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-http-structured-headers.git",
@@ -62,15 +53,6 @@
       "state" : {
         "revision" : "a0a57e949a8903563aba4615869310c0ebf14c03",
         "version" : "1.4.0"
-      }
-    },
-    {
-      "identity" : "swift-json",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/tayloraswift/swift-json.git",
-      "state" : {
-        "revision" : "a349369773603889a915c645cb7b0cf8de255181",
-        "version" : "1.2.0"
       }
     },
     {
