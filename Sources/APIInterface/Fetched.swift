@@ -3,7 +3,7 @@ import SwiftUI
 /// A property wrapper, similar to SwiftUI's `State` or `Binding` types, that sources its value automatically from an API endpoint.
 @MainActor
 @propertyWrapper
-public struct Fetched<API: APIProtocol, Model: ModelProtocol, Request: APIRequestSuite<API, Model>, Cache: APIInterface.Cache<API, Model, Request>>: Sendable, DynamicProperty {
+public struct Fetched<Cache: CacheProtocol>: Sendable, DynamicProperty {
     /// The cache that handles data loading.
     @State public var cache: Cache
     
@@ -16,7 +16,7 @@ public struct Fetched<API: APIProtocol, Model: ModelProtocol, Request: APIReques
     }
     
     /// The resulting value from the last load action, if any.
-    public var wrappedValue: Model? {
+    public var wrappedValue: Cache.Model? {
         cache[modelID].value
     }
     
@@ -26,7 +26,7 @@ public struct Fetched<API: APIProtocol, Model: ModelProtocol, Request: APIReques
     }
     
     /// The resulting failure from the last loading operation, if any.
-    public var failure: Request.Find.Failure? {
+    public var failure: Cache.Request.Find.Failure? {
         cache[modelID].failure
     }
 }

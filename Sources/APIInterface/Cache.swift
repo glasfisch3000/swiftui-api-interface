@@ -2,8 +2,43 @@ import Foundation
 import SwiftUI
 
 @MainActor
+public protocol CacheProtocol<Request>: Sendable {
+    associatedtype API: APIProtocol
+    associatedtype Model: ModelProtocol
+    associatedtype Request: APIRequestSuite where Request.API == API, Request.Model == Model
+    
+    var api: API { get }
+    var suite: Request { get }
+    
+    var listFailure: Request.List.Failure? { get }
+    var isLoading: Bool { get }
+    subscript(id: UUID) -> CacheEntry<Request.Find> { get }
+    
+    @discardableResult
+    func load() async throws(API.APIError) -> Result<Void, Request.List.Failure>
+    
+    @discardableResult
+    func fetch(id: UUID) async throws(API.APIError) -> Result<Model, Request.Find.Failure>
+}
+
+public struct CacheEntry<Request: APIFindRequest>: Sendable {
+    public var value: Request.Model?
+    public var failure: Request.Failure?
+    public var loading: Bool
+    
+    public init(value: Request.Model? = nil, failure: Request.Failure? = nil, loading: Bool = false) {
+        self.value = value
+        self.failure = failure
+        self.loading = loading
+    }
+}
+
+@MainActor
 @Observable
-public class Cache<API: APIProtocol, Model: ModelProtocol, Request: APIRequestSuite<API, Model>> {
+public class Cache<Request: APIRequestSuite>: CacheProtocol {
+    public typealias API = Request.API
+    public typealias Model = Request.Model
+    
     public var api: API
     public var suite: Request
     
@@ -19,24 +54,10 @@ public class Cache<API: APIProtocol, Model: ModelProtocol, Request: APIRequestSu
         self.cachedValues = [:]
         self.suite = requestSuite
     }
-}
-
-extension Cache {
-    public struct Entry {
-        public var value: Model?
-        public var failure: Request.Find.Failure?
-        public var loading: Bool
-        
-        public init(value: Model? = nil, failure: Request.Find.Failure? = nil, loading: Bool = false) {
-            self.value = value
-            self.failure = failure
-            self.loading = loading
-        }
-    }
     
     public var isLoading: Bool { listOperation != nil }
     
-    public subscript(id: UUID) -> Entry {
+    public subscript(id: UUID) -> CacheEntry<Request.Find> {
         .init(value: cachedValues[id], failure: cachedFailures[id], loading: findOperations[id] != nil)
     }
 }

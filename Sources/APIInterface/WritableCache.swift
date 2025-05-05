@@ -2,8 +2,15 @@ import Foundation
 import SwiftUI
 
 @MainActor
+public protocol WritableCacheProtocol<Request>: CacheProtocol where Request: APIWritableRequestSuite {
+    func create(properties: Model.Properties) async throws(API.APIError) -> Result<Model, Request.Create.Failure>
+    func update(id: UUID, properties: Model.Properties) async throws(API.APIError) -> Result<Model, Request.Update.Failure>
+    func delete(id: UUID) async throws(API.APIError) -> Result<UUID, Request.Delete.Failure>
+}
+
+@MainActor
 @Observable
-public class WritableCache<API: APIProtocol, Model: ModelProtocol, Request: APIWritableRequestSuite<API, Model>>: Cache<API, Model, Request> {
+public class WritableCache<API: APIProtocol, Model: ModelProtocol, Request: APIWritableRequestSuite<API, Model>>: Cache<Request>, WritableCacheProtocol {
     var updateOperations: [UUID: UpdateOperation] = [:]
     var deleteOperations: [UUID: DeleteOperation] = [:]
     
