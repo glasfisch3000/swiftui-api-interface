@@ -8,7 +8,8 @@ public class Cache<API: APIProtocol, Model: ModelProtocol, Request: APIRequestSu
     public var suite: Request
     
     public var cachedValues: [UUID: Model]
-    public var listFailure: Request.List.Failure?
+    public var listFailure: Request.List.Failure? = nil
+    public var cachedFailures: [UUID: Request.Find.Failure] = [:]
     
     var listOperation: ListOperation? = nil
     var findOperations: [UUID: FindOperation] = [:]
@@ -23,10 +24,12 @@ public class Cache<API: APIProtocol, Model: ModelProtocol, Request: APIRequestSu
 extension Cache {
     public struct Entry {
         public var value: Model?
+        public var failure: Request.Find.Failure?
         public var loading: Bool
         
-        public init(value: Model? = nil, loading: Bool = false) {
+        public init(value: Model? = nil, failure: Request.Find.Failure? = nil, loading: Bool = false) {
             self.value = value
+            self.failure = failure
             self.loading = loading
         }
     }
@@ -34,7 +37,7 @@ extension Cache {
     public var isLoading: Bool { listOperation != nil }
     
     public subscript(id: UUID) -> Entry {
-        .init(value: cachedValues[id], loading: findOperations[id] != nil)
+        .init(value: cachedValues[id], failure: cachedFailures[id], loading: findOperations[id] != nil)
     }
 }
 
@@ -86,6 +89,9 @@ extension Cache {
                 } else {
                     self.cachedValues[id] = Model(id: id, properties: properties)
                 }
+                
+                // remove all the cached find failures for the loaded models
+                self.cachedFailures.removeValue(forKey: id)
             }
             
             return ()
@@ -99,11 +105,18 @@ extension Cache {
             }
         }
         
-        return try await operation.get()
+        switch try await operation.get() {
+        case .success(_): return .success(())
+        case .failure(let failure):
+            listFailure = failure
+            return .failure(failure)
+        }
     }
     
+    @discardableResult
     public func fetch(id: UUID) async throws(API.APIError) -> Result<Model, Request.Find.Failure> {
         let operation = findOperations[id] ?? FindOperation(suite.find(id: id), on: api) { container in
+            self.cachedFailures.removeValue(forKey: id)
             if let model = self.cachedValues[id] {
                 model.properties = container.properties
                 model.lastUpdated = .now
@@ -123,6 +136,11 @@ extension Cache {
             }
         }
         
-        return try await operation.get()
+        switch try await operation.get() {
+        case .success(let model): return .success(model)
+        case .failure(let failure):
+            cachedFailures[id] = failure
+            return .failure(failure)
+        }
     }
 }
