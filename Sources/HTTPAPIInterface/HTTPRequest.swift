@@ -76,11 +76,6 @@ public protocol HTTPCreateRequest<Model, Parent>: APICreateRequest, HTTPRequest
 where Failure: HTTPRequestFailure, Parent: HTTPRequest { }
 
 extension HTTPCreateRequest {
-    @MainActor
-    public init(model: Model, parent: Parent) {
-        self.init(properties: model.properties, parent: parent)
-    }
-    
     public var path: [String] { parent.path + [Model.scheme] }
     public var method: HTTPMethod { .POST }
     public var query: [String : QueryEncodable?] { self.properties.encodeQuery() }
@@ -92,11 +87,6 @@ public protocol HTTPUpdateRequest<Model>: APIUpdateRequest, HTTPRequest
 where Failure: HTTPRequestFailure, Parent: HTTPRequest { }
 
 extension HTTPUpdateRequest {
-    @MainActor
-    public init(model: Model, parent: Parent) {
-        self.init(id: model.id, properties: model.properties, parent: parent)
-    }
-    
     public var path: [String] { parent.path + [Model.scheme, id.uuidString] }
     public var method: HTTPMethod { .PATCH }
     public var query: [String : QueryEncodable?] { properties.encodeQuery() }

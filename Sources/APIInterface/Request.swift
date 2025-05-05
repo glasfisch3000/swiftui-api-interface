@@ -32,22 +32,18 @@ public protocol APINestedRequest<API, Parent>: APIRequest {
 
 public protocol APIListRequest<API, Model>: APINestedRequest where Response == [ModelCodingContainer<Model>] {
     associatedtype Model: ModelProtocol
-    
-    init(parent: Parent)
 }
 
 public protocol APIFindRequest<API, Model>: APINestedRequest where Response == ModelCodingContainer<Model> {
     associatedtype Model: ModelProtocol
     
     var id: UUID { get }
-    init(id: UUID, parent: Parent)
 }
 
 public protocol APICreateRequest<API, Model>: APINestedRequest where Response == ModelCodingContainer<Model> {
     associatedtype Model: ModelProtocol
     
     var properties: Model.Properties { get }
-    init(properties: Model.Properties, parent: Parent)
 }
 
 public protocol APIUpdateRequest<API, Model>: APINestedRequest where Response == ModelCodingContainer<Model> {
@@ -55,12 +51,10 @@ public protocol APIUpdateRequest<API, Model>: APINestedRequest where Response ==
     
     var id: UUID { get }
     var properties: Model.Properties { get }
-    init(id: UUID, properties: Model.Properties, parent: Parent)
 }
 
 public protocol APIDeleteRequest<API, Model>: APINestedRequest where Response == UUID {
     associatedtype Model: ModelProtocol
     
     var id: UUID { get }
-    init(id: UUID, parent: Parent)
 }
