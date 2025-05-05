@@ -10,7 +10,7 @@ public protocol WritableCacheProtocol<Request>: CacheProtocol where Request: API
 
 @MainActor
 @Observable
-public class WritableCache<API: APIProtocol, Model: ModelProtocol, Request: APIWritableRequestSuite<API, Model>>: Cache<Request>, WritableCacheProtocol {
+public class WritableCache<Request: APIWritableRequestSuite>: Cache<Request>, WritableCacheProtocol {
     var updateOperations: [UUID: UpdateOperation] = [:]
     var deleteOperations: [UUID: DeleteOperation] = [:]
     
