@@ -33,7 +33,7 @@ public final class HTTPAPI: APIProtocol, Sendable {
     }
     
     public enum RawResponse: Sendable {
-        case success(JSON.Node)
+        case success(Data)
         case disallowed
         case notFound
     }
@@ -109,7 +109,7 @@ public final class HTTPAPI: APIProtocol, Sendable {
     
     /// Sends a raw API request and checks for errors, but doesn't decode a response.
     public func makeRequest(_ request: RawRequest) async throws(APIError) -> RawResponse {
-        func fetch(_ clientRequest: HTTPClientRequest) async throws(APIError) -> (HTTPClientResponse, JSON.Node) {
+        func fetch(_ clientRequest: HTTPClientRequest) async throws(APIError) -> (HTTPClientResponse, Data) {
             do {
                 let response = try await client.execute(clientRequest, timeout: .seconds(10))
                 guard response.status.mayHaveResponseBody else {
@@ -117,12 +117,11 @@ public final class HTTPAPI: APIProtocol, Sendable {
                 }
                 
                 var buffer = try await response.body.collect(upTo: options.maxResponseSize)
-                guard let jsonString = buffer.readString(length: buffer.readableBytes, encoding: .utf8) else {
+                guard let data = buffer.readData(length: buffer.readableBytes) else {
                     throw APIError.emptyResponse
                 }
                 
-                let json = try JSON.Node(parsing: jsonString)
-                return (response, json)
+                return (response, data)
             } catch let error as HTTPClientError {
                 print(error)
                 switch error {
@@ -148,13 +147,14 @@ public final class HTTPAPI: APIProtocol, Sendable {
             clientRequest.headers.add(name: "Authorization", value: auth)
         }
         
-        let (response, json) = try await fetch(clientRequest)
+        let (response, data) = try await fetch(clientRequest)
         
         if response.status == .ok {
-            return .success(json)
+            return .success(data)
         }
         
-        guard let decoded = try? DecodableError(from: json, configuration: response.status) else {
+        let decoder = JSONDecoder()
+        guard let decoded = try? decoder.decode(DecodableError.self, from: data, configuration: response.status) else {
             throw APIError.httpStatus(response.status)
         }
         

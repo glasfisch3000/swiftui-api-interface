@@ -22,9 +22,10 @@ extension HTTPRequest where Response: Decodable, Failure: HTTPRequestFailure {
         switch data {
         case .disallowed: throw .disallowed
         case .notFound: throw .notFound
-        case .success(let node):
+        case .success(let data):
             do {
-                return try Response(from: node)
+                let decoder = JSONDecoder()
+                return try decoder.decode(Response.self, from: data)
             } catch {
                 throw .decodingError(error)
             }

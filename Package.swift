@@ -16,7 +16,6 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/swift-server/async-http-client.git", from: "1.24.0"),
-        .package(url: "https://github.com/tayloraswift/swift-json.git", from: "1.2.0"),
     ],
     targets: [
         .target(
@@ -27,7 +26,6 @@ let package = Package(
             dependencies: [
                 .target(name: "APIInterface"),
                 .product(name: "AsyncHTTPClient", package: "async-http-client"),
-                .product(name: "JSON", package: "swift-json"),
                 .product(name: "JSONLegacy", package: "swift-json"),
             ]
         ),
