@@ -10,7 +10,7 @@ public struct ListFetched<Cache: CacheProtocol, ListRequest: APIListRequest>: Se
     
     public init(cache: Cache, request: ListRequest? = nil, requestType: ListRequest.Type = ListRequest.self) {
         self.cache = cache
-        self.request = request
+        self._request = .init(initialValue: request)
     }
     
     /// The resulting value from the last load action, if any.
