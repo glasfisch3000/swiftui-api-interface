@@ -3,12 +3,12 @@ import SwiftUI
 /// A property wrapper, similar to SwiftUI's `State` or `Binding` types, that sources its values automatically from an API endpoint.
 @MainActor
 @propertyWrapper
-public struct ListFetched<Cache: CacheProtocol, ListRequest: APIListRequest>: Sendable, DynamicProperty where ListRequest.API == Cache.API, ListRequest.Model == Cache.Model {
+public struct ListFetched<Cache: CacheProtocol>: Sendable, DynamicProperty {
     /// The cache that handles data loading.
     @State public var cache: Cache
-    @State public var request: ListRequest?
+    @State public var request: Cache.Request.List?
     
-    public init(cache: Cache, request: ListRequest? = nil, requestType: ListRequest.Type = ListRequest.self) {
+    public init(cache: Cache, request: Cache.Request.List? = nil) {
         self.cache = cache
         self._request = .init(initialValue: request)
     }
@@ -37,11 +37,7 @@ extension ListFetched {
     /// Re-load the cached value.
     public func reload() async {
         do {
-            if let request = self.request, ListRequest.self != Cache.Request.List.self {
-                try await cache.execute(listRequest: request)
-            } else {
-                try await cache.load()
-            }
+            try await cache.load(request: request)
         } catch { }
     }
     
@@ -58,11 +54,7 @@ extension ListFetched {
             guard values.isEmpty else { return }
             
             do {
-                if let request = self.request, ListRequest.self != Cache.Request.List.self {
-                    try await cache.execute(listRequest: request)
-                } else {
-                    try await cache.load()
-                }
+                try await cache.load(request: request)
             } catch { }
         }
     }

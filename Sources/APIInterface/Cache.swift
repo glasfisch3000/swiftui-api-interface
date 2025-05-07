@@ -17,13 +17,10 @@ public protocol CacheProtocol<Request>: Sendable {
     subscript(id: UUID) -> CacheEntry<Request.Find> { get }
     
     @discardableResult
-    func load() async throws(API.APIError) -> Result<Void, Request.List.Failure>
+    func load(request: Request.List?) async throws(API.APIError) -> Result<Void, Request.List.Failure>
     
     @discardableResult
     func fetch(id: UUID) async throws(API.APIError) -> Result<Model, Request.Find.Failure>
-    
-    @discardableResult
-    func execute<ListRequest: APIListRequest>(listRequest: ListRequest) async throws(API.APIError) -> Result<Void, ListRequest.Failure> where ListRequest.API == API, ListRequest.Model == Model
 }
 
 public struct CacheEntry<Request: APIFindRequest>: Sendable {
@@ -51,7 +48,7 @@ public class Cache<Request: APIRequestSuite>: CacheProtocol {
     public var listFailure: Request.List.Failure? = nil
     public var cachedFailures: [UUID: Request.Find.Failure] = [:]
     
-    var listOperation: ListOperation? = nil
+    var listOperations: [Request.List.FilterOptions: ListOperation] = [:]
     var findOperations: [UUID: FindOperation] = [:]
     
     public init(api: API, requestSuite: Request) {
@@ -60,7 +57,7 @@ public class Cache<Request: APIRequestSuite>: CacheProtocol {
         self.suite = requestSuite
     }
     
-    public var isLoading: Bool { listOperation != nil }
+    public var isLoading: Bool { listOperations.isEmpty }
     
     public subscript(id: UUID) -> CacheEntry<Request.Find> {
         .init(value: cachedValues[id], failure: cachedFailures[id], loading: findOperations[id] != nil)
@@ -95,15 +92,18 @@ extension Cache {
     typealias FindOperation = Operation<Model, Request.Find>
     
     @discardableResult
-    public func load() async throws(API.APIError) -> Result<Void, Request.List.Failure> {
-        let operation = listOperation ?? ListOperation(suite.list(), on: api) { containers in
+    public func load(request: Request.List? = nil) async throws(API.APIError) -> Result<Void, Request.List.Failure> {
+        let listRequest = request ?? suite.list()
+        let runningOperation = listOperations[listRequest.filterOptions]
+        let operation = runningOperation ?? ListOperation(listRequest, on: api) { containers in
             let tuples = containers.map { ($0.id, $0.properties) }
             let containers: [UUID: Model.Properties] = .init(uniqueKeysWithValues: tuples)
             
             // remove everything from cachedValues that is not in containers
-            for (id, _) in self.cachedValues {
+            for (id, _) in listRequest.filterModels(self.cachedValues) {
                 if containers[id] == nil {
                     self.cachedValues.removeValue(forKey: id)
+                    self.cachedFailures.removeValue(forKey: id)
                 }
             }
             
@@ -122,12 +122,12 @@ extension Cache {
             
             return ()
         }
-        listOperation = operation
+        listOperations[listRequest.filterOptions] = operation
         
         defer {
             // release the operation if it hasn't been done yet
-            if listOperation == operation {
-                listOperation = nil
+            if listOperations[listRequest.filterOptions] == operation {
+                listOperations.removeValue(forKey: listRequest.filterOptions)
             }
         }
         
@@ -166,42 +166,6 @@ extension Cache {
         case .success(let model): return .success(model)
         case .failure(let failure):
             cachedFailures[id] = failure
-            return .failure(failure)
-        }
-    }
-    
-    @discardableResult
-    public func execute<ListRequest>(listRequest: ListRequest) async throws(API.APIError) -> Result<Void, ListRequest.Failure> where ListRequest : APIListRequest, ListRequest.API == API, ListRequest.Model == Model {
-        let operation = Operation<Void, ListRequest>(listRequest, on: api) { containers in
-            let tuples = containers.map { ($0.id, $0.properties) }
-            let containers: [UUID: Model.Properties] = .init(uniqueKeysWithValues: tuples)
-            
-            // remove everything from cachedValues that is not in containers
-            for (id, _) in self.cachedValues {
-                if containers[id] == nil {
-                    self.cachedValues.removeValue(forKey: id)
-                }
-            }
-            
-            // apply addidions/changes to cachedValues
-            for (id, properties) in containers {
-                if let model = self.cachedValues[id] {
-                    model.properties = properties
-                    model.lastUpdated = .now
-                } else {
-                    self.cachedValues[id] = Model(id: id, properties: properties)
-                }
-                
-                // remove all the cached find failures for the loaded models
-                self.cachedFailures.removeValue(forKey: id)
-            }
-            
-            return ()
-        }
-        
-        switch try await operation.get() {
-        case .success(_): return .success(())
-        case .failure(let failure):
             return .failure(failure)
         }
     }
