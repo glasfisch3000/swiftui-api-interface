@@ -50,7 +50,12 @@ extension ListFetched {
     nonisolated
     public func update() {
         Task { @MainActor in
-            guard cache.cachedValues.isEmpty else { return }
+            let values = if let request = request {
+                request.filterModels(cache.cachedValues)
+            } else {
+                cache.cachedValues
+            }
+            guard values.isEmpty else { return }
             
             do {
                 if let request = self.request, ListRequest.self != Cache.Request.List.self {
