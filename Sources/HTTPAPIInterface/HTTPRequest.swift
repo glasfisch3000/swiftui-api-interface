@@ -58,10 +58,6 @@ extension HTTPListRequest {
     public var method: HTTPMethod { .GET }
     public var path: [String] { parent.path + [Model.scheme] }
     public var query: [String : QueryEncodable?] { [:] }
-    
-    public func filterModels(_ models: [UUID : Model]) -> [UUID : Model] {
-        models
-    }
 }
 
 
