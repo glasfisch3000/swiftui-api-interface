@@ -3,35 +3,33 @@ import SwiftUI
 /// A property wrapper, similar to SwiftUI's `State` or `Binding` types, that sources its values automatically from an API endpoint.
 @MainActor
 @propertyWrapper
-public struct ListFetched<Cache: CacheProtocol>: Sendable, DynamicProperty {
+public struct ListFetched<Request: APIListRequest>: Sendable, DynamicProperty {
     /// The cache that handles data loading.
-    @State public var cache: Cache
-    @State public var request: Cache.Request.List?
+    @State public var cache: any CacheProtocol<Request.API>
+    
+    /// The request to fetch the models with.
+    @State public var request: Request
     
     @State private var alreadyFetched = false
     
-    public init(cache: Cache, request: Cache.Request.List? = nil) {
+    public init(request: Request, cache: any CacheProtocol<Request.API>) {
+        self.request = request
         self.cache = cache
-        self._request = .init(initialValue: request)
     }
     
     /// The resulting value from the last load action, if any.
-    public var wrappedValue: [UUID: Cache.Model]? {
-        if let request = request {
-            cache.cachedValues.filter { request.filterModel($0.value) }
-        } else {
-            cache.cachedValues
-        }
+    public var wrappedValue: [UUID: Request.Model] {
+        cache.get(request).value
     }
     
     /// Indicates whether the value is currently being loaded from source.
     public var isLoading: Bool {
-        cache.isLoading
+        cache.get(request).loading
     }
     
     /// The resulting failure from the last loading operation, if any.
-    public var failure: Cache.Request.List.Failure? {
-        cache.listFailure
+    public var failure: Request.Failure? {
+        cache.get(request).failure
     }
 }
 
@@ -43,7 +41,7 @@ extension ListFetched {
         }
         
         do {
-            try await cache.load(request: request)
+            try await cache.execute(request: request)
         } catch { }
     }
     
@@ -55,15 +53,10 @@ extension ListFetched {
             if alreadyFetched { return }
             defer { alreadyFetched = true }
             
-            let values = if let request = request {
-                cache.cachedValues.filter { request.filterModel($0.value) }
-            } else {
-                cache.cachedValues
-            }
-            guard values.isEmpty else { return }
+            guard cache.get(request).value.isEmpty else { return }
             
             do {
-                try await cache.load(request: request)
+                try await cache.execute(request: request)
             } catch { }
         }
     }

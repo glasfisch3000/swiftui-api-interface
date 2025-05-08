@@ -3,33 +3,33 @@ import SwiftUI
 /// A property wrapper, similar to SwiftUI's `State` or `Binding` types, that sources its value automatically from an API endpoint.
 @MainActor
 @propertyWrapper
-public struct Fetched<Cache: CacheProtocol>: Sendable, DynamicProperty {
+public struct Fetched<Request: APIFindRequest>: Sendable, DynamicProperty {
     /// The cache that handles data loading.
-    @State public var cache: Cache
+    @State public var cache: any CacheProtocol<Request.API>
     
-    /// The ID of the model to fetch.
-    @State public var modelID: UUID
+    /// The request to fetch the model with.
+    @State public var request: Request
     
     @State private var alreadyFetched = false
     
-    public init(id: UUID, cache: Cache) {
-        self.modelID = id
+    public init(request: Request, cache: any CacheProtocol<Request.API>) {
+        self.request = request
         self.cache = cache
     }
     
     /// The resulting value from the last load action, if any.
-    public var wrappedValue: Cache.Model? {
-        cache[modelID].value
+    public var wrappedValue: Request.Model? {
+        cache.get(request).value
     }
     
     /// Indicates whether the value is currently being loaded from source.
     public var isLoading: Bool {
-        cache[modelID].loading
+        cache.get(request).loading
     }
     
     /// The resulting failure from the last loading operation, if any.
-    public var failure: Cache.Request.Find.Failure? {
-        cache[modelID].failure
+    public var failure: Request.Failure? {
+        cache.get(request).failure
     }
 }
 
@@ -39,7 +39,7 @@ extension Fetched {
         defer { alreadyFetched = true }
         
         do {
-            try await cache.fetch(id: modelID)
+            try await cache.execute(request: request)
         } catch { }
     }
     
@@ -51,10 +51,10 @@ extension Fetched {
             if alreadyFetched { return }
             defer { alreadyFetched = true }
             
-            guard cache[modelID].value == nil else { return }
+            guard cache.get(request).value == nil else { return }
             
             do {
-                try await cache.fetch(id: modelID)
+                try await cache.execute(request: request)
             } catch { }
         }
     }

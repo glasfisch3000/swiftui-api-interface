@@ -2,33 +2,60 @@ import Foundation
 import SwiftUI
 
 @MainActor
-public protocol CacheProtocol<Request>: Sendable {
+public protocol CacheProtocol<API>: Sendable {
     associatedtype API: APIProtocol
-    associatedtype Model: ModelProtocol
-    associatedtype Request: APIRequestSuite where Request.API == API, Request.Model == Model
     
     var api: API { get }
-    var suite: Request { get }
     
-    var cachedValues: [UUID: Model] { get }
-    var listFailure: Request.List.Failure? { get }
+    var cachedModels: [UUID: any ModelProtocol] { get }
+    var cachedFailures: [UUID: Error] { get }
+    var listFailures: [CacheListRequestSignature: Error] { get }
     
-    var isLoading: Bool { get }
-    subscript(id: UUID) -> CacheEntry<Request.Find> { get }
-    
-    @discardableResult
-    func load(request: Request.List?) async throws(API.APIError) -> Result<Void, Request.List.Failure>
+    func get<Request: APIListRequest>(_ request: Request) -> CacheEntry<[UUID: Request.Model], Request.Failure> where Request.API == API, Request.Model.API == API
+    func get<Request: APIFindRequest>(_ request: Request) -> CacheEntry<Request.Model?, Request.Failure> where Request.API == API, Request.Model.API == API
     
     @discardableResult
-    func fetch(id: UUID) async throws(API.APIError) -> Result<Model, Request.Find.Failure>
+    func execute<Request: APIListRequest>(request: Request) async throws(API.APIError) -> Result<[Request.Model], Request.Failure> where Request.API == API, Request.Model.API == API
+    
+    @discardableResult
+    func execute<Request: APIFindRequest>(request: Request) async throws(API.APIError) -> Result<Request.Model, Request.Failure> where Request.API == API, Request.Model.API == API
 }
 
-public struct CacheEntry<Request: APIFindRequest>: Sendable {
-    public var value: Request.Model?
-    public var failure: Request.Failure?
+public struct CacheListRequestSignature: Sendable, Hashable {
+    var modelType: any (ModelProtocol.Type)
+    var failureType: any (Error.Type)
+    var filterOptions: any Hashable & Sendable
+    
+    init(modelType: any (ModelProtocol.Type), failureType: any (Error.Type), filterOptions: any Hashable & Sendable) {
+        self.modelType = modelType
+        self.failureType = failureType
+        self.filterOptions = filterOptions
+    }
+    
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(modelType.scheme)
+        hasher.combine(filterOptions)
+    }
+    
+    public static func == (lhs: CacheListRequestSignature, rhs: CacheListRequestSignature) -> Bool {
+        lhs.modelType == rhs.modelType &&
+        lhs.failureType == rhs.failureType &&
+        lhs.filterOptions.hashValue == rhs.filterOptions.hashValue
+    }
+}
+
+extension APIListRequest {
+    var cacheSignature: CacheListRequestSignature {
+        .init(modelType: Self.Model.self, failureType: Self.Failure.self, filterOptions: self.filterOptions)
+    }
+}
+
+public struct CacheEntry<Value: Sendable, Failure: Sendable>: Sendable {
+    public var value: Value
+    public var failure: Failure?
     public var loading: Bool
     
-    public init(value: Request.Model? = nil, failure: Request.Failure? = nil, loading: Bool = false) {
+    public init(value: Value, failure: Failure?, loading: Bool) {
         self.value = value
         self.failure = failure
         self.loading = loading
@@ -37,43 +64,58 @@ public struct CacheEntry<Request: APIFindRequest>: Sendable {
 
 @MainActor
 @Observable
-public class Cache<Request: APIRequestSuite>: CacheProtocol {
-    public typealias API = Request.API
-    public typealias Model = Request.Model
-    
+public class Cache<API: APIProtocol>: CacheProtocol {
     public var api: API
-    public var suite: Request
     
-    public var cachedValues: [UUID: Model]
-    public var listFailure: Request.List.Failure? = nil
-    public var cachedFailures: [UUID: Request.Find.Failure] = [:]
+    public var cachedModels: [UUID: any ModelProtocol] = [:]
+    public var cachedFailures: [UUID: Error] = [:]
+    public var listFailures: [CacheListRequestSignature: Error] = [:]
     
-    var listOperations: [Request.List.FilterOptions: ListOperation] = [:]
-    var findOperations: [UUID: FindOperation] = [:]
+    internal var listOperations: [CacheListRequestSignature: ListOperation] = [:]
+    internal var findOperations: [UUID: FindOperation] = [:]
     
-    public init(api: API, requestSuite: Request) {
+    public init(api: API) {
         self.api = api
-        self.cachedValues = [:]
-        self.suite = requestSuite
     }
     
-    public var isLoading: Bool { listOperations.isEmpty }
+    public func get<Request: APIListRequest>(_ request: Request) -> CacheEntry<[UUID: Request.Model], Request.Failure> {
+        let values = cachedModels
+            .compactMapValues { $0 as? Request.Model }
+            .filter { request.filterModel($0.value) }
+        
+        let failure = listFailures[request.cacheSignature] as? Request.Failure
+        let runningOperation = listOperations[request.cacheSignature]
+        return .init(value: values, failure: failure, loading: runningOperation != nil)
+    }
     
-    public subscript(id: UUID) -> CacheEntry<Request.Find> {
-        .init(value: cachedValues[id], failure: cachedFailures[id], loading: findOperations[id] != nil)
+    public func get<Request: APIFindRequest>(_ request: Request) -> CacheEntry<Request.Model?, Request.Failure> {
+        let values = cachedModels[request.id] as? Request.Model
+        let failure = cachedFailures[request.id] as? Request.Failure
+        let runningOperation = findOperations[request.id]
+        return .init(value: values, failure: failure, loading: runningOperation != nil)
     }
 }
 
 extension Cache {
-    struct Operation<Value: Sendable, OperationRequest: APIRequest>: Equatable, Identifiable where OperationRequest.API == API {
+    struct Operation<Value: Sendable, Failure: Error>: Equatable, Identifiable {
         var id = UUID()
-        var task: Task<Result<Result<Value, OperationRequest.Failure>, API.APIError>, Never>
+        var task: Task<Result<Result<Value, Failure>, API.APIError>, Never>
         
-        init(_ request: OperationRequest, on api: API, handler: @escaping @MainActor (OperationRequest.Response) -> Value) {
+        init<OperationRequest: APIRequest>(_ request: OperationRequest,
+                                               on api: API,
+                                               handleValue: @escaping @MainActor (OperationRequest.Response) -> Value,
+                                               handleFailure: @escaping @MainActor (OperationRequest.Failure) -> Failure,
+                                               handleAPIError: @escaping @MainActor (API.APIError) -> Void
+        ) where OperationRequest.API == API {
             task = Task { @MainActor in
                 do throws(API.APIError) {
-                    return .success(try await request.run(on: api).map(handler))
+                    let result = try await request.run(on: api)
+                        .map(handleValue)
+                        .mapError(handleFailure)
+                    
+                    return .success(result)
                 } catch {
+                    handleAPIError(error)
                     return .failure(error)
                 }
             }
@@ -83,90 +125,97 @@ extension Cache {
             lhs.id == rhs.id
         }
         
-        func get() async throws(API.APIError) -> Result<Value, OperationRequest.Failure> {
+        func get() async throws(API.APIError) -> Result<Value, Failure> {
             try await task.value.get()
         }
     }
     
-    typealias ListOperation = Operation<Void, Request.List>
-    typealias FindOperation = Operation<Model, Request.Find>
+    typealias ListOperation = Operation<[any ModelProtocol], Error>
+    typealias FindOperation = Operation<any ModelProtocol, Error>
     
     @discardableResult
-    public func load(request: Request.List? = nil) async throws(API.APIError) -> Result<Void, Request.List.Failure> {
-        let listRequest = request ?? suite.list()
-        let runningOperation = listOperations[listRequest.filterOptions]
-        let operation = runningOperation ?? ListOperation(listRequest, on: api) { containers in
-            let tuples = containers.map { ($0.id, $0.properties) }
-            let containers: [UUID: Model.Properties] = .init(uniqueKeysWithValues: tuples)
+    public func execute<Request: APIListRequest>(request: Request) async throws(API.APIError) -> Result<[Request.Model], Request.Failure> where Request.API == API, Request.Model.API == API {
+        let runningOperation = listOperations[request.cacheSignature]
+        let operation = runningOperation ?? ListOperation(request, on: api) { codingContainers in
+            self.listFailures.removeValue(forKey: request.cacheSignature)
             
-            // remove everything from cachedValues that is not in containers
-            for (id, _) in self.cachedValues.filter({ listRequest.filterModel($0.value) }) {
+            let tuples = codingContainers.map { ($0.id, $0.properties) }
+            let containers: [UUID: Request.Model.Properties] = .init(uniqueKeysWithValues: tuples)
+            
+            // remove everything from cachedValues that was apparently deleted
+            let existingModels = self.cachedModels
+                .compactMapValues { $0 as? Request.Model }
+                .filter { request.filterModel($0.value) }
+            for (id, _) in existingModels {
                 if containers[id] == nil {
-                    self.cachedValues.removeValue(forKey: id)
+                    self.cachedModels.removeValue(forKey: id)
                     self.cachedFailures.removeValue(forKey: id)
                 }
             }
             
-            // apply addidions/changes to cachedValues
-            for (id, properties) in containers {
-                if let model = self.cachedValues[id] {
+            return containers.map { (id, properties) in
+                // apply addidions/changes to cache
+                self.cachedFailures.removeValue(forKey: id)
+                if let model = self.cachedModels[id] as? Request.Model {
                     model.properties = properties
                     model.lastUpdated = .now
+                    return model
                 } else {
-                    self.cachedValues[id] = Model(id: id, properties: properties)
+                    let model = Request.Model(id: id, properties: properties, cache: self)
+                    self.cachedModels[id] = model
+                    return model
                 }
-                
-                // remove all the cached find failures for the loaded models
-                self.cachedFailures.removeValue(forKey: id)
             }
-            
-            return ()
+        } handleFailure: { listFailure in
+            self.listFailures[request.cacheSignature] = listFailure
+            return listFailure
+        } handleAPIError: { _ in
+            self.listFailures.removeValue(forKey: request.cacheSignature)
         }
-        listOperations[listRequest.filterOptions] = operation
         
         defer {
             // release the operation if it hasn't been done yet
-            if listOperations[listRequest.filterOptions] == operation {
-                listOperations.removeValue(forKey: listRequest.filterOptions)
+            if listOperations[request.cacheSignature] == operation {
+                listOperations.removeValue(forKey: request.cacheSignature)
             }
         }
         
-        switch try await operation.get() {
-        case .success(_): return .success(())
-        case .failure(let failure):
-            listFailure = failure
-            return .failure(failure)
-        }
+        return try await operation.get()
+            .map { $0.map { $0 as! Request.Model } }
+            .mapError { $0 as! Request.Failure }
     }
     
     @discardableResult
-    public func fetch(id: UUID) async throws(API.APIError) -> Result<Model, Request.Find.Failure> {
-        let operation = findOperations[id] ?? FindOperation(suite.find(id: id), on: api) { container in
-            self.cachedFailures.removeValue(forKey: id)
-            if let model = self.cachedValues[id] {
-                model.properties = container.properties
+    public func execute<Request: APIFindRequest>(request: Request) async throws(API.APIError) -> Result<Request.Model, Request.Failure> where Request.API == API, Request.Model.API == API {
+        let runningOperation = findOperations[request.id]
+        let operation = runningOperation ?? FindOperation(request, on: api) { codingContainer in
+            self.cachedFailures.removeValue(forKey: request.id)
+            
+            if let model = self.cachedModels[request.id] as? Request.Model {
+                model.properties = codingContainer.properties
                 model.lastUpdated = .now
                 return model
             } else {
-                let model = Model(id: id, properties: container.properties)
-                self.cachedValues[id] = model
+                let model = Request.Model(id: codingContainer.id, properties: codingContainer.properties, cache: self)
+                self.cachedModels[request.id] = model
                 return model
             }
+        } handleFailure: { findFailure in
+            self.cachedFailures[request.id] = findFailure
+            return findFailure
+        } handleAPIError: { _ in
+            self.cachedFailures.removeValue(forKey: request.id)
         }
-        findOperations[id] = operation
         
         defer {
             // release the operation if it hasn't been done yet
-            if findOperations[id] == operation {
-                findOperations.removeValue(forKey: id)
+            if findOperations[request.id] == operation {
+                findOperations.removeValue(forKey: request.id)
             }
         }
         
-        switch try await operation.get() {
-        case .success(let model): return .success(model)
-        case .failure(let failure):
-            cachedFailures[id] = failure
-            return .failure(failure)
-        }
+        return try await operation.get()
+            .map { $0 as! Request.Model }
+            .mapError { $0 as! Request.Failure }
     }
 }

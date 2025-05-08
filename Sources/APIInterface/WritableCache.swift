@@ -2,79 +2,92 @@ import Foundation
 import SwiftUI
 
 @MainActor
-public protocol WritableCacheProtocol<Request>: CacheProtocol where Request: APIWritableRequestSuite {
-    func create(properties: Model.Properties) async throws(API.APIError) -> Result<Model, Request.Create.Failure>
-    func update(id: UUID, properties: Model.Properties) async throws(API.APIError) -> Result<Model, Request.Update.Failure>
-    func delete(id: UUID) async throws(API.APIError) -> Result<UUID, Request.Delete.Failure>
+public protocol WritableCacheProtocol<API>: CacheProtocol {
+    func execute<Request: APICreateRequest>(request: Request) async throws(API.APIError) -> Result<Request.Model, Request.Failure> where Request.API == API, Request.Model.API == API
+    
+    func execute<Request: APIUpdateRequest>(request: Request) async throws(API.APIError) -> Result<Request.Model, Request.Failure> where Request.API == API, Request.Model.API == API
+    
+    func execute<Request: APIDeleteRequest>(request: Request) async throws(API.APIError) -> Result<UUID, Request.Failure> where Request.API == API, Request.Model.API == API
 }
 
 @MainActor
 @Observable
-public class WritableCache<Request: APIWritableRequestSuite>: Cache<Request>, WritableCacheProtocol {
+public class WritableCache<API: APIProtocol>: Cache<API>, WritableCacheProtocol {
     var updateOperations: [UUID: UpdateOperation] = [:]
     var deleteOperations: [UUID: DeleteOperation] = [:]
     
-    typealias CreateOperation = Operation<Model, Request.Create>
-    typealias UpdateOperation = Operation<Model, Request.Update>
-    typealias DeleteOperation = Operation<UUID, Request.Delete>
+    typealias CreateOperation = Operation<any ModelProtocol, Error>
+    typealias UpdateOperation = Operation<any ModelProtocol, Error>
+    typealias DeleteOperation = Operation<UUID, Error>
     
-    public func create(properties: Model.Properties) async throws(API.APIError) -> Result<Model, Request.Create.Failure> {
-        let operation = CreateOperation(suite.create(properties: properties), on: api) { container in
-            let model = Model(id: container.id, properties: container.properties)
-            self.cachedValues[container.id] = model
+    public func execute<Request: APICreateRequest>(request: Request) async throws(API.APIError) -> Result<Request.Model, Request.Failure> where API == Request.API, Request.Model.API == API {
+        let operation = CreateOperation(request, on: api) { container in
+            let model = Request.Model(id: container.id, properties: container.properties, cache: self)
+            self.cachedModels[container.id] = model
             return model
-        }
+        } handleFailure: { $0 } handleAPIError: { _ in }
+        
         return try await operation.get()
+            .map { $0 as! Request.Model }
+            .mapError { $0 as! Request.Failure }
     }
     
-    public func update(id: UUID, properties: Model.Properties) async throws(API.APIError) -> Result<Model, Request.Update.Failure> {
+    public func execute<Request: APIUpdateRequest>(request: Request) async throws(API.APIError) -> Result<Request.Model, Request.Failure> where API == Request.API, Request.Model.API == API {
         // wait for other operations to finish
-        while let runningOperation = updateOperations[id] {
+        while let runningOperation = updateOperations[request.id] {
             _ = try? await runningOperation.get()
             
             // release the operation if it hasn't been done yet
-            if updateOperations[id] == runningOperation {
-                updateOperations[id] = nil
+            if updateOperations[request.id] == runningOperation {
+                updateOperations[request.id] = nil
             }
         }
         
-        let operation = UpdateOperation(suite.update(id: id, properties: properties), on: api) { container in
-            if let model = self.cachedValues[container.id] {
+        let operation = UpdateOperation(request, on: api) { container in
+            self.cachedFailures.removeValue(forKey: request.id)
+            if let model = self.cachedModels[request.id] as? Request.Model {
                 model.properties = container.properties
                 model.lastUpdated = .now
                 return model
             } else {
-                let model = Model(id: container.id, properties: container.properties)
-                self.cachedValues[container.id] = model
+                let model = Request.Model(id: container.id, properties: container.properties, cache: self)
+                self.cachedModels[request.id] = model
                 return model
             }
-        }
-        updateOperations[id] = operation
+        } handleFailure: { $0 } handleAPIError: { _ in }
+        
+        updateOperations[request.id] = operation
         
         defer {
             // release the operation if it hasn't been done yet
-            if updateOperations[id] == operation {
-                updateOperations[id] = nil
+            if updateOperations[request.id] == operation {
+                updateOperations[request.id] = nil
             }
         }
         
         return try await operation.get()
+            .map { $0 as! Request.Model }
+            .mapError { $0 as! Request.Failure }
     }
     
-    public func delete(id: UUID) async throws(API.APIError) -> Result<UUID, Request.Delete.Failure> {
-        let operation = deleteOperations[id] ?? DeleteOperation(suite.delete(id: id), on: api) { id in
-            self.cachedValues.removeValue(forKey: id)
+    public func execute<Request: APIDeleteRequest>(request: Request) async throws(API.APIError) -> Result<UUID, Request.Failure> where API == Request.API, Request.Model.API == API {
+        let runningOperation = deleteOperations[request.id]
+        let operation = runningOperation ?? DeleteOperation(request, on: api) { id in
+            self.cachedModels.removeValue(forKey: id)
+            self.cachedFailures.removeValue(forKey: id)
             return id
-        }
-        deleteOperations[id] = operation
+        } handleFailure: { $0 } handleAPIError: { _ in }
+        
+        deleteOperations[request.id] = operation
         
         defer {
             // release the operation if it hasn't been done yet
-            if deleteOperations[id] == operation {
-                deleteOperations.removeValue(forKey: id)
+            if deleteOperations[request.id] == operation {
+                deleteOperations.removeValue(forKey: request.id)
             }
         }
         
         return try await operation.get()
+            .mapError { $0 as! Request.Failure }
     }
 }

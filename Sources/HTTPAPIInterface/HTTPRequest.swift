@@ -43,14 +43,6 @@ public protocol HTTPRequestFailure: Error {
 
 
 
-public protocol HTTPRequestSuite<API, Model>: APIRequestSuite, HTTPRequest
-where API: HTTPAPI, List: HTTPListRequest, Find: HTTPFindRequest { }
-
-public protocol HTTPWritableRequestSuite<API, Model>: HTTPRequestSuite, APIWritableRequestSuite
-where Create: HTTPCreateRequest, Update: HTTPUpdateRequest, Delete: HTTPDeleteRequest { }
-
-
-
 public protocol HTTPListRequest<Model, Parent>: APIListRequest, HTTPRequest
 where Failure: HTTPRequestFailure, Parent: HTTPRequest { }
 

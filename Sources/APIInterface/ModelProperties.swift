@@ -39,10 +39,6 @@ public struct ModelCodingContainer<Model: ModelProtocol>: Sendable, Hashable, De
         self.properties = try .init(from: decoder)
     }
     
-    public func makeModel() -> Model {
-        Model(id: id, properties: properties)
-    }
-    
     public func encodeQuery() -> [String: QueryEncodable] {
         var query = properties.encodeQuery()
         query["id"] = id

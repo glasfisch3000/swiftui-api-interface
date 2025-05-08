@@ -31,7 +31,7 @@ public protocol APINestedRequest<API, Parent>: APIRequest {
 
 
 public protocol APIListRequest<API, Model>: APINestedRequest where Response == [ModelCodingContainer<Model>] {
-    associatedtype Model: ModelProtocol
+    associatedtype Model: ModelProtocol where Model.API == Self.API
     associatedtype FilterOptions: Sendable, Hashable
     
     /// A list request's filter options are query parameters that apply a specific selection to the fetched models, such as "all models that have the property x". This does not include things like sorting options or unspecific limitations like "the first 100 models".
