@@ -11,14 +11,14 @@ public protocol CacheProtocol<API>: Sendable {
     var cachedFailures: [UUID: Error] { get }
     var listFailures: [CacheListRequestSignature: Error] { get }
     
-    func get<Request: APIListRequest>(_ request: Request) -> CacheEntry<[UUID: Request.Model], Request.Failure> where Request.API == API, Request.Model.API == API
-    func get<Request: APIFindRequest>(_ request: Request) -> CacheEntry<Request.Model?, Request.Failure> where Request.API == API, Request.Model.API == API
+    func get<Request: APIListRequest>(_ request: Request) -> CacheEntry<[UUID: Request.Model], Request.Failure> where Request.API == API
+    func get<Request: APIFindRequest>(_ request: Request) -> CacheEntry<Request.Model?, Request.Failure> where Request.API == API
     
     @discardableResult
-    func execute<Request: APIListRequest>(request: Request) async throws(API.APIError) -> Result<[Request.Model], Request.Failure> where Request.API == API, Request.Model.API == API
+    func execute<Request: APIListRequest>(request: Request) async throws(API.APIError) -> Result<[Request.Model], Request.Failure> where Request.API == API
     
     @discardableResult
-    func execute<Request: APIFindRequest>(request: Request) async throws(API.APIError) -> Result<Request.Model, Request.Failure> where Request.API == API, Request.Model.API == API
+    func execute<Request: APIFindRequest>(request: Request) async throws(API.APIError) -> Result<Request.Model, Request.Failure> where Request.API == API
 }
 
 public struct CacheListRequestSignature: Sendable, Hashable {
@@ -134,7 +134,7 @@ extension Cache {
     typealias FindOperation = Operation<any ModelProtocol, Error>
     
     @discardableResult
-    public func execute<Request: APIListRequest>(request: Request) async throws(API.APIError) -> Result<[Request.Model], Request.Failure> where Request.API == API, Request.Model.API == API {
+    public func execute<Request: APIListRequest>(request: Request) async throws(API.APIError) -> Result<[Request.Model], Request.Failure> where Request.API == API {
         let runningOperation = listOperations[request.cacheSignature]
         let operation = runningOperation ?? ListOperation(request, on: api) { codingContainers in
             self.listFailures.removeValue(forKey: request.cacheSignature)
@@ -186,7 +186,7 @@ extension Cache {
     }
     
     @discardableResult
-    public func execute<Request: APIFindRequest>(request: Request) async throws(API.APIError) -> Result<Request.Model, Request.Failure> where Request.API == API, Request.Model.API == API {
+    public func execute<Request: APIFindRequest>(request: Request) async throws(API.APIError) -> Result<Request.Model, Request.Failure> where Request.API == API {
         let runningOperation = findOperations[request.id]
         let operation = runningOperation ?? FindOperation(request, on: api) { codingContainer in
             self.cachedFailures.removeValue(forKey: request.id)

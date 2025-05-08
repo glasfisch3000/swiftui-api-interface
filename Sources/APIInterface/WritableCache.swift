@@ -3,11 +3,11 @@ import SwiftUI
 
 @MainActor
 public protocol WritableCacheProtocol<API>: CacheProtocol {
-    func execute<Request: APICreateRequest>(request: Request) async throws(API.APIError) -> Result<Request.Model, Request.Failure> where Request.API == API, Request.Model.API == API
+    func execute<Request: APICreateRequest>(request: Request) async throws(API.APIError) -> Result<Request.Model, Request.Failure> where Request.API == API
     
-    func execute<Request: APIUpdateRequest>(request: Request) async throws(API.APIError) -> Result<Request.Model, Request.Failure> where Request.API == API, Request.Model.API == API
+    func execute<Request: APIUpdateRequest>(request: Request) async throws(API.APIError) -> Result<Request.Model, Request.Failure> where Request.API == API
     
-    func execute<Request: APIDeleteRequest>(request: Request) async throws(API.APIError) -> Result<UUID, Request.Failure> where Request.API == API, Request.Model.API == API
+    func execute<Request: APIDeleteRequest>(request: Request) async throws(API.APIError) -> Result<UUID, Request.Failure> where Request.API == API
 }
 
 @MainActor
@@ -20,7 +20,7 @@ public class WritableCache<API: APIProtocol>: Cache<API>, WritableCacheProtocol 
     typealias UpdateOperation = Operation<any ModelProtocol, Error>
     typealias DeleteOperation = Operation<UUID, Error>
     
-    public func execute<Request: APICreateRequest>(request: Request) async throws(API.APIError) -> Result<Request.Model, Request.Failure> where API == Request.API, Request.Model.API == API {
+    public func execute<Request: APICreateRequest>(request: Request) async throws(API.APIError) -> Result<Request.Model, Request.Failure> where API == Request.API {
         let operation = CreateOperation(request, on: api) { container in
             let model = Request.Model(id: container.id, properties: container.properties, cache: self)
             self.cachedModels[container.id] = model
@@ -32,7 +32,7 @@ public class WritableCache<API: APIProtocol>: Cache<API>, WritableCacheProtocol 
             .mapError { $0 as! Request.Failure }
     }
     
-    public func execute<Request: APIUpdateRequest>(request: Request) async throws(API.APIError) -> Result<Request.Model, Request.Failure> where API == Request.API, Request.Model.API == API {
+    public func execute<Request: APIUpdateRequest>(request: Request) async throws(API.APIError) -> Result<Request.Model, Request.Failure> where API == Request.API {
         // wait for other operations to finish
         while let runningOperation = updateOperations[request.id] {
             _ = try? await runningOperation.get()
@@ -70,7 +70,7 @@ public class WritableCache<API: APIProtocol>: Cache<API>, WritableCacheProtocol 
             .mapError { $0 as! Request.Failure }
     }
     
-    public func execute<Request: APIDeleteRequest>(request: Request) async throws(API.APIError) -> Result<UUID, Request.Failure> where API == Request.API, Request.Model.API == API {
+    public func execute<Request: APIDeleteRequest>(request: Request) async throws(API.APIError) -> Result<UUID, Request.Failure> where API == Request.API {
         let runningOperation = deleteOperations[request.id]
         let operation = runningOperation ?? DeleteOperation(request, on: api) { id in
             self.cachedModels.removeValue(forKey: id)
