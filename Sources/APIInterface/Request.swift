@@ -22,15 +22,7 @@ extension APIRequest {
 
 
 
-public protocol APINestedRequest<API, Parent>: APIRequest {
-    associatedtype Parent: APIRequest
-    
-    var parent: Parent { get }
-}
-
-
-
-public protocol APIListRequest<API, Model>: APINestedRequest where Response == [ModelCodingContainer<Model>] {
+public protocol APIListRequest<API, Model>: APIRequest where Response == [ModelCodingContainer<Model>] {
     associatedtype Model: ModelProtocol where Model.API == API
     associatedtype FilterOptions: Sendable, Hashable
     
@@ -41,26 +33,26 @@ public protocol APIListRequest<API, Model>: APINestedRequest where Response == [
     func filterModel(_ model: Model) -> Bool
 }
 
-public protocol APIFindRequest<API, Model>: APINestedRequest where Response == ModelCodingContainer<Model> {
+public protocol APIFindRequest<API, Model>: APIRequest where Response == ModelCodingContainer<Model> {
     associatedtype Model: ModelProtocol where Model.API == API
     
     var id: UUID { get }
 }
 
-public protocol APICreateRequest<API, Model>: APINestedRequest where Response == ModelCodingContainer<Model> {
+public protocol APICreateRequest<API, Model>: APIRequest where Response == ModelCodingContainer<Model> {
     associatedtype Model: ModelProtocol where Model.API == API
     
     var properties: Model.Properties { get }
 }
 
-public protocol APIUpdateRequest<API, Model>: APINestedRequest where Response == ModelCodingContainer<Model> {
+public protocol APIUpdateRequest<API, Model>: APIRequest where Response == ModelCodingContainer<Model> {
     associatedtype Model: ModelProtocol where Model.API == API
     
     var id: UUID { get }
     var properties: Model.Properties { get }
 }
 
-public protocol APIDeleteRequest<API, Model>: APINestedRequest where Response == UUID {
+public protocol APIDeleteRequest<API, Model>: APIRequest where Response == UUID {
     associatedtype Model: ModelProtocol where Model.API == API
     
     var id: UUID { get }

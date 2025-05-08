@@ -43,33 +43,33 @@ public protocol HTTPRequestFailure: Error {
 
 
 
-public protocol HTTPListRequest<Model, Parent>: APIListRequest, HTTPRequest
-where Failure: HTTPRequestFailure, Parent: HTTPRequest { }
+public protocol HTTPListRequest<Model>: APIListRequest, HTTPRequest
+where Failure: HTTPRequestFailure { }
 
 extension HTTPListRequest {
     public var method: HTTPMethod { .GET }
-    public var path: [String] { parent.path + [Model.scheme] }
+    public var path: [String] { [Model.scheme] }
     public var query: [String : QueryEncodable?] { [:] }
 }
 
 
 
-public protocol HTTPFindRequest<Model, Parent>: APIFindRequest, HTTPRequest
-where Failure: HTTPRequestFailure, Parent: HTTPRequest { }
+public protocol HTTPFindRequest<Model>: APIFindRequest, HTTPRequest
+where Failure: HTTPRequestFailure { }
 
 extension HTTPFindRequest {
-    public var path: [String] { parent.path + [Model.scheme, id.uuidString] }
+    public var path: [String] { [Model.scheme, id.uuidString] }
     public var method: HTTPMethod { .GET }
     public var query: [String : QueryEncodable?] { [:] }
 }
 
 
 
-public protocol HTTPCreateRequest<Model, Parent>: APICreateRequest, HTTPRequest
-where Failure: HTTPRequestFailure, Parent: HTTPRequest { }
+public protocol HTTPCreateRequest<Model>: APICreateRequest, HTTPRequest
+where Failure: HTTPRequestFailure { }
 
 extension HTTPCreateRequest {
-    public var path: [String] { parent.path + [Model.scheme] }
+    public var path: [String] { [Model.scheme] }
     public var method: HTTPMethod { .POST }
     public var query: [String : QueryEncodable?] { self.properties.encodeQuery() }
 }
@@ -77,10 +77,10 @@ extension HTTPCreateRequest {
 
 
 public protocol HTTPUpdateRequest<Model>: APIUpdateRequest, HTTPRequest
-where Failure: HTTPRequestFailure, Parent: HTTPRequest { }
+where Failure: HTTPRequestFailure { }
 
 extension HTTPUpdateRequest {
-    public var path: [String] { parent.path + [Model.scheme, id.uuidString] }
+    public var path: [String] { [Model.scheme, id.uuidString] }
     public var method: HTTPMethod { .PATCH }
     public var query: [String : QueryEncodable?] { properties.encodeQuery() }
 }
@@ -88,10 +88,10 @@ extension HTTPUpdateRequest {
 
 
 public protocol HTTPDeleteRequest<Model>: APIDeleteRequest, HTTPRequest
-where Failure: HTTPRequestFailure, Parent: HTTPRequest { }
+where Failure: HTTPRequestFailure { }
 
 extension HTTPDeleteRequest {
-    public var path: [String] { parent.path + [Model.scheme, id.uuidString] }
+    public var path: [String] { [Model.scheme, id.uuidString] }
     public var method: HTTPMethod { .DELETE }
     public var query: [String : QueryEncodable?] { [:] }
 }
