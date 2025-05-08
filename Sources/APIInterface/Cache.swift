@@ -100,7 +100,7 @@ extension Cache {
             let containers: [UUID: Model.Properties] = .init(uniqueKeysWithValues: tuples)
             
             // remove everything from cachedValues that is not in containers
-            for (id, _) in listRequest.filterModels(self.cachedValues) {
+            for (id, _) in self.cachedValues.filter({ listRequest.filterModel($0.value) }) {
                 if containers[id] == nil {
                     self.cachedValues.removeValue(forKey: id)
                     self.cachedFailures.removeValue(forKey: id)

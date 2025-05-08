@@ -18,7 +18,7 @@ public struct ListFetched<Cache: CacheProtocol>: Sendable, DynamicProperty {
     /// The resulting value from the last load action, if any.
     public var wrappedValue: [UUID: Cache.Model]? {
         if let request = request {
-            request.filterModels(cache.cachedValues)
+            cache.cachedValues.filter { request.filterModel($0.value) }
         } else {
             cache.cachedValues
         }
@@ -56,7 +56,7 @@ extension ListFetched {
             defer { alreadyFetched = true }
             
             let values = if let request = request {
-                request.filterModels(cache.cachedValues)
+                cache.cachedValues.filter { request.filterModel($0.value) }
             } else {
                 cache.cachedValues
             }
