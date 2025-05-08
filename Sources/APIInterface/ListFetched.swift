@@ -8,6 +8,8 @@ public struct ListFetched<Cache: CacheProtocol>: Sendable, DynamicProperty {
     @State public var cache: Cache
     @State public var request: Cache.Request.List?
     
+    @State private var alreadyFetched = false
+    
     public init(cache: Cache, request: Cache.Request.List? = nil) {
         self.cache = cache
         self._request = .init(initialValue: request)
@@ -36,6 +38,10 @@ public struct ListFetched<Cache: CacheProtocol>: Sendable, DynamicProperty {
 extension ListFetched {
     /// Re-load the cached value.
     public func reload() async {
+        defer {
+            alreadyFetched = true
+        }
+        
         do {
             try await cache.load(request: request)
         } catch { }
@@ -46,6 +52,9 @@ extension ListFetched {
     nonisolated
     public func update() {
         Task { @MainActor in
+            if alreadyFetched { return }
+            defer { alreadyFetched = true }
+            
             let values = if let request = request {
                 request.filterModels(cache.cachedValues)
             } else {

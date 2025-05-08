@@ -10,6 +10,8 @@ public struct Fetched<Cache: CacheProtocol>: Sendable, DynamicProperty {
     /// The ID of the model to fetch.
     @State public var modelID: UUID
     
+    @State private var alreadyFetched = false
+    
     public init(id: UUID, cache: Cache) {
         self.modelID = id
         self.cache = cache
@@ -34,6 +36,8 @@ public struct Fetched<Cache: CacheProtocol>: Sendable, DynamicProperty {
 extension Fetched {
     /// Re-load the cached value.
     public func reload() async {
+        defer { alreadyFetched = true }
+        
         do {
             try await cache.fetch(id: modelID)
         } catch { }
@@ -44,6 +48,9 @@ extension Fetched {
     nonisolated
     public func update() {
         Task { @MainActor in
+            if alreadyFetched { return }
+            defer { alreadyFetched = true }
+            
             guard cache[modelID].value == nil else { return }
             
             do {
