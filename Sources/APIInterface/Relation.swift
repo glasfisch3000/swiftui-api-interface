@@ -6,7 +6,7 @@ public struct Relation<Parent: ModelProtocol, Request: APIFindRequest>: Sendable
     public var request: @MainActor (Parent) -> Request
     public var cache: (any CacheProtocol<Request.API>)?
     
-    public init(parent: Parent?, request: @escaping @MainActor (Parent) -> Request, cache: (any CacheProtocol<Request.API>)? = nil) {
+    public init(parent: Parent? = nil, request: @escaping @MainActor (Parent) -> Request, cache: (any CacheProtocol<Request.API>)? = nil) {
         self.parent = parent
         self.request = request
         self.cache = cache
