@@ -11,5 +11,5 @@ public protocol ModelProtocol: AnyObject, Sendable, Identifiable where ID == UUI
     var lastUpdated: Date { get set }
     
     var properties: Properties { get set }
-    nonisolated init(id: UUID, properties: Properties, cache: any CacheProtocol<API>)
+    init(id: UUID, properties: Properties, cache: any CacheProtocol<API>)
 }
