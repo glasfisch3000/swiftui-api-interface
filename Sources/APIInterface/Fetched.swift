@@ -17,6 +17,8 @@ public struct Fetched<Request: APIFindRequest>: Sendable, DynamicProperty {
         self.cache = cache
     }
     
+    public var projectedValue: Self { self }
+    
     /// The resulting value from the last load action, if any.
     public var wrappedValue: Request.Model? {
         cache.get(request).value
