@@ -12,6 +12,11 @@ public struct Relation<Parent: ModelProtocol, Request: APIFindRequest>: Sendable
         self.cache = cache
     }
     
+    public mutating func connect(parent: Parent, cache: any CacheProtocol<Request.API>) {
+        self.parent = parent
+        self.cache = cache
+    }
+    
     @MainActor
     public var wrappedValue: Request.Model? {
         guard let parent = parent else { return nil }
