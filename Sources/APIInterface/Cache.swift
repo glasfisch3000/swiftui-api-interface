@@ -173,6 +173,8 @@ extension Cache {
             self.listFailures.removeValue(forKey: request.cacheSignature)
         }
         
+        listOperations[request.cacheSignature] = operation
+        
         defer {
             // release the operation if it hasn't been done yet
             if listOperations[request.cacheSignature] == operation {
@@ -206,6 +208,8 @@ extension Cache {
         } handleAPIError: { _ in
             self.cachedFailures.removeValue(forKey: request.id)
         }
+        
+        findOperations[request.id] = operation
         
         defer {
             // release the operation if it hasn't been done yet
