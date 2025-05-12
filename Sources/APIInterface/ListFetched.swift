@@ -18,8 +18,13 @@ public struct ListFetched<Request: APIListRequest>: Sendable, DynamicProperty {
     }
     
     /// The resulting value from the last load action, if any.
-    public var wrappedValue: [UUID: Request.Model] {
-        cache.get(request).value
+    public var wrappedValue: [UUID: Request.Model]? {
+        let value = cache.get(request).value
+        if alreadyFetched || !value.isEmpty {
+            return value
+        } else {
+            return nil
+        }
     }
     
     /// Indicates whether the value is currently being loaded from source.
@@ -34,6 +39,10 @@ public struct ListFetched<Request: APIListRequest>: Sendable, DynamicProperty {
 }
 
 extension ListFetched {
+    public func connect(_ cache: any CacheProtocol<Request.API>) {
+        self.cache = cache
+    }
+    
     /// Re-load the cached value.
     public func reload() async {
         defer {

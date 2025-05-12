@@ -34,6 +34,10 @@ public struct Fetched<Request: APIFindRequest>: Sendable, DynamicProperty {
 }
 
 extension Fetched {
+    public func connect(_ cache: any CacheProtocol<Request.API>) {
+        self.cache = cache
+    }
+    
     /// Re-load the cached value.
     public func reload() async {
         defer { alreadyFetched = true }
