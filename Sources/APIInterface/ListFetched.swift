@@ -8,7 +8,7 @@ public struct ListFetched<Request: APIListRequest>: Sendable, DynamicProperty {
     @State public var cache: any CacheProtocol<Request.API>
     
     /// The request to fetch the models with.
-    @State public var request: Request
+    public var request: Request
     
     @State private var alreadyFetched = false
     
