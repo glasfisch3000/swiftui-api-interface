@@ -1,7 +1,7 @@
 import Foundation
 
 @MainActor
-public protocol ModelProtocol: AnyObject, Sendable, Identifiable where ID == UUID {
+public protocol ModelProtocol: AnyObject, Sendable, Equatable, Identifiable where ID == UUID {
     associatedtype API: APIProtocol
     associatedtype Properties: ModelProperties
     
@@ -12,4 +12,11 @@ public protocol ModelProtocol: AnyObject, Sendable, Identifiable where ID == UUI
     
     var properties: Properties { get set }
     init(id: UUID, properties: Properties, cache: any CacheProtocol<API>)
+}
+
+extension ModelProtocol {
+    nonisolated
+    public static func == (lhs: Self, rhs: Self) -> Bool {
+        lhs.id == rhs.id
+    }
 }
