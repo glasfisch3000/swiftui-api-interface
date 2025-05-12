@@ -17,6 +17,8 @@ public struct ListFetched<Request: APIListRequest>: Sendable, DynamicProperty {
         self.cache = cache
     }
     
+    public var projectedValue: Self { self }
+    
     /// The resulting value from the last load action, if any.
     public var wrappedValue: [UUID: Request.Model]? {
         let value = cache.get(request).value
