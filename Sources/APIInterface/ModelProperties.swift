@@ -2,6 +2,8 @@ import Foundation
 
 public protocol ModelProperties: Sendable, Hashable, Decodable {
     func encodeQuery() -> [String: QueryEncodable]
+    
+    static func < (lhs: Self, rhs: Self) -> Bool
 }
 
 extension ModelProperties {

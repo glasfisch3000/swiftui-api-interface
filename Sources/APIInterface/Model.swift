@@ -19,4 +19,10 @@ extension ModelProtocol {
     public static func == (lhs: Self, rhs: Self) -> Bool {
         lhs.id == rhs.id
     }
+    
+    public static func < (lhs: Self, rhs: Self) -> Bool {
+        if lhs.properties < rhs.properties { return true }
+        if rhs.properties < lhs.properties { return false }
+        return lhs.id < rhs.id
+    }
 }
