@@ -1,6 +1,7 @@
 import Foundation
 
 public protocol ModelProperties: Sendable, Hashable, Decodable {
+    var isValid: Bool { get }
     func encodeQuery() -> [String: QueryEncodable]
     
     static func < (lhs: Self, rhs: Self) -> Bool
