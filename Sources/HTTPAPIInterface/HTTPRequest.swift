@@ -106,5 +106,5 @@ extension HTTPDeleteRequest {
     public var path: [String] { [Model.scheme, id.uuidString] }
     public var method: HTTPMethod { .DELETE }
     public var query: [String : QueryEncodable?] { [:] }
-    public var data: Data? { nil }
+    public var body: Data? { nil }
 }
