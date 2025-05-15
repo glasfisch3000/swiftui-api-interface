@@ -1,6 +1,8 @@
 import Foundation
 
-public protocol ModelProperties: Sendable, Hashable, Decodable {
+public protocol ModelProperties: Sendable, Hashable, Encodable, Decodable {
+    associatedtype CodingKeys: CodingKey
+    
     var isValid: Bool { get }
     func encodeQuery() -> [String: QueryEncodable]
     
@@ -23,7 +25,7 @@ extension ModelProperties {
 
 
 
-public struct ModelCodingContainer<Model: ModelProtocol>: Sendable, Hashable, Decodable {
+public struct ModelCodingContainer<Model: ModelProtocol>: Sendable, Hashable, Encodable, Decodable {
     enum CodingKeys: CodingKey {
         case id
     }
@@ -40,6 +42,12 @@ public struct ModelCodingContainer<Model: ModelProtocol>: Sendable, Hashable, De
         let container = try decoder.container(keyedBy: CodingKeys.self)
         self.id = try container.decode(UUID.self, forKey: .id)
         self.properties = try .init(from: decoder)
+    }
+    
+    public func encode(to encoder: any Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(self.id, forKey: .id)
+        try self.properties.encode(to: encoder)
     }
     
     public func encodeQuery() -> [String: QueryEncodable] {

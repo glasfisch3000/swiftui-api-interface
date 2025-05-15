@@ -7,13 +7,15 @@ public protocol HTTPRequest<Response>: APIRequest where API: HTTPAPI {
     var method: HTTPMethod { get }
     var path: [String] { get }
     var query: [String: QueryEncodable?] { get }
+    var body: Data? { get }
 }
 
 extension HTTPRequest {
     public func makeRawRequest() -> HTTPAPI.RawRequest {
         HTTPAPI.RawRequest(method: self.method,
                            path: self.path,
-                           query: self.query.compactMapValues { $0?.asQueryString })
+                           query: self.query.compactMapValues { $0?.asQueryString },
+                           body: self.body)
     }
 }
 
@@ -50,6 +52,7 @@ extension HTTPListRequest {
     public var method: HTTPMethod { .GET }
     public var path: [String] { [Model.scheme] }
     public var query: [String : QueryEncodable?] { [:] }
+    public var body: Data? { nil }
 }
 
 
@@ -61,6 +64,7 @@ extension HTTPFindRequest {
     public var path: [String] { [Model.scheme, id.uuidString] }
     public var method: HTTPMethod { .GET }
     public var query: [String : QueryEncodable?] { [:] }
+    public var body: Data? { nil }
 }
 
 
@@ -71,7 +75,11 @@ where Failure: HTTPRequestFailure { }
 extension HTTPCreateRequest {
     public var path: [String] { [Model.scheme] }
     public var method: HTTPMethod { .POST }
-    public var query: [String : QueryEncodable?] { self.properties.encodeQuery() }
+    public var query: [String : QueryEncodable?] { [:] }
+    public var body: Data? {
+        let encoder = JSONEncoder()
+        return try? encoder.encode(self.properties)
+    }
 }
 
 
@@ -83,6 +91,10 @@ extension HTTPUpdateRequest {
     public var path: [String] { [Model.scheme, id.uuidString] }
     public var method: HTTPMethod { .PATCH }
     public var query: [String : QueryEncodable?] { properties.encodeQuery() }
+    public var body: Data? {
+        let encoder = JSONEncoder()
+        return try? encoder.encode(self.properties)
+    }
 }
 
 
@@ -94,4 +106,5 @@ extension HTTPDeleteRequest {
     public var path: [String] { [Model.scheme, id.uuidString] }
     public var method: HTTPMethod { .DELETE }
     public var query: [String : QueryEncodable?] { [:] }
+    public var data: Data? { nil }
 }

@@ -12,11 +12,13 @@ open class HTTPAPI: APIProtocol, Sendable {
         public var method: HTTPMethod
         public var path: [String]
         public var query: [String: String]
+        public var body: Data?
         
-        public init(method: HTTPMethod, path: [String], query: [String : String]) {
+        public init(method: HTTPMethod, path: [String], query: [String : String], body: Data?) {
             self.method = method
             self.path = path
             self.query = query
+            self.body = body
         }
     }
     
@@ -143,6 +145,9 @@ open class HTTPAPI: APIProtocol, Sendable {
         clientRequest.method = request.method
         if let auth = auth {
             clientRequest.headers.add(name: "Authorization", value: auth)
+        }
+        if let bodyData = request.body {
+            clientRequest.body = .bytes(.init(data: bodyData))
         }
         
         let (response, data) = try await fetch(clientRequest)
