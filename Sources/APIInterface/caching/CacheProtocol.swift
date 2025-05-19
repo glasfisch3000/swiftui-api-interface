@@ -22,12 +22,12 @@ public protocol CacheProtocol<API>: Sendable {
 }
 
 extension CacheProtocol {
-	func removeModel(id: UUID) {
+	public func removeModel(id: UUID) {
 		self.cachedModels.removeValue(forKey: id)
 		self.cachedFailures.removeValue(forKey: id)
 	}
 	
-	func setModel<Model: ModelProtocol>(id: UUID, properties: Model.Properties) -> Model where Model.API == Self.API {
+	public func setModel<Model: ModelProtocol>(id: UUID, properties: Model.Properties) -> Model where Model.API == Self.API {
 		cachedFailures.removeValue(forKey: id)
 		if let model = cachedModels[id] as? Model {
 			model.properties = properties
