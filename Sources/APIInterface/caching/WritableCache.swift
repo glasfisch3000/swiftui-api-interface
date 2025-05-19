@@ -22,9 +22,7 @@ public class WritableCache<API: APIProtocol>: Cache<API>, WritableCacheProtocol 
     
     public func execute<Request: APICreateRequest>(request: Request) async throws(API.APIError) -> Result<Request.Model, Request.Failure> where API == Request.API {
         let operation = CreateOperation(request, on: api) { container in
-            let model = Request.Model(id: container.id, properties: container.properties, cache: self)
-            self.cachedModels[container.id] = model
-            return model
+			return request.updateCache(self, with: container)
         } handleFailure: { $0 } handleAPIError: { _ in }
         
         return try await operation.get()
@@ -44,16 +42,7 @@ public class WritableCache<API: APIProtocol>: Cache<API>, WritableCacheProtocol 
         }
         
         let operation = UpdateOperation(request, on: api) { container in
-            self.cachedFailures.removeValue(forKey: request.id)
-            if let model = self.cachedModels[request.id] as? Request.Model {
-                model.properties = container.properties
-                model.lastUpdated = .now
-                return model
-            } else {
-                let model = Request.Model(id: container.id, properties: container.properties, cache: self)
-                self.cachedModels[request.id] = model
-                return model
-            }
+			request.updateCache(self, with: container)
         } handleFailure: { $0 } handleAPIError: { _ in }
         
         updateOperations[request.id] = operation
@@ -73,9 +62,7 @@ public class WritableCache<API: APIProtocol>: Cache<API>, WritableCacheProtocol 
     public func execute<Request: APIDeleteRequest>(request: Request) async throws(API.APIError) -> Result<UUID, Request.Failure> where API == Request.API {
         let runningOperation = deleteOperations[request.id]
         let operation = runningOperation ?? DeleteOperation(request, on: api) { id in
-            self.cachedModels.removeValue(forKey: id)
-            self.cachedFailures.removeValue(forKey: id)
-            return id
+			request.updateCache(self, with: id)
         } handleFailure: { $0 } handleAPIError: { _ in }
         
         deleteOperations[request.id] = operation

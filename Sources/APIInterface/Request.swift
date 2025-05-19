@@ -31,18 +31,27 @@ public protocol APIListRequest<API, Model>: APIRequest where Response == [ModelC
     
     @MainActor
     func filterModel(_ model: Model) -> Bool
+	
+	@MainActor
+	func updateCache(_ cache: any CacheProtocol<API>, with response: Response) -> [Model]
 }
 
 public protocol APIFindRequest<API, Model>: APIRequest where Response == ModelCodingContainer<Model> {
     associatedtype Model: ModelProtocol where Model.API == API
     
     var id: UUID { get }
+	
+	@MainActor
+	func updateCache(_ cache: any CacheProtocol<API>, with response: Response) -> Model
 }
 
 public protocol APICreateRequest<API, Model>: APIRequest where Response == ModelCodingContainer<Model> {
     associatedtype Model: ModelProtocol where Model.API == API
     
     var properties: Model.Properties { get }
+	
+	@MainActor
+	func updateCache(_ cache: any CacheProtocol<API>, with response: Response) -> Model
 }
 
 public protocol APIUpdateRequest<API, Model>: APIRequest where Response == ModelCodingContainer<Model> {
@@ -50,10 +59,16 @@ public protocol APIUpdateRequest<API, Model>: APIRequest where Response == Model
     
     var id: UUID { get }
     var properties: Model.Properties { get }
+	
+	@MainActor
+	func updateCache(_ cache: any CacheProtocol<API>, with response: Response) -> Model
 }
 
 public protocol APIDeleteRequest<API, Model>: APIRequest where Response == UUID {
     associatedtype Model: ModelProtocol where Model.API == API
     
     var id: UUID { get }
+	
+	@MainActor
+	func updateCache(_ cache: any CacheProtocol<API>, with response: Response) -> UUID
 }
