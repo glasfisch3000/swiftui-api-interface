@@ -28,7 +28,7 @@ extension CacheProtocol {
 	}
 	
 	@discardableResult
-	public func setModel<Model: ModelProtocol>(id: UUID, properties: Model.Properties, as type: Model.Type = Model.self) -> Model where Model.API == Self.API {
+	public func setModel<Model: ModelProtocol>(id: UUID, properties: Model.Properties) -> Model where Model.API == Self.API {
 		cachedFailures.removeValue(forKey: id)
 		if let model = cachedModels[id] as? Model {
 			model.properties = properties
