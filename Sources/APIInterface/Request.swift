@@ -32,6 +32,7 @@ public protocol APIListRequest<API, Model>: APIRequest where Response == [ModelC
     @MainActor
     func filterModel(_ model: Model) -> Bool
 	
+	/// Called by a cache instance after the request has completed. Updates the cache's stored models with the new data from the API response.
 	@MainActor
 	func updateCache(_ cache: any CacheProtocol<API>, with response: Response) -> [Model]
 }
@@ -41,6 +42,7 @@ public protocol APIFindRequest<API, Model>: APIRequest where Response == ModelCo
     
     var id: UUID { get }
 	
+	/// Called by a cache instance after the request has completed. Updates the cache's stored models with the new data from the API response.
 	@MainActor
 	func updateCache(_ cache: any CacheProtocol<API>, with response: Response) -> Model
 }
@@ -50,6 +52,7 @@ public protocol APICreateRequest<API, Model>: APIRequest where Response == Model
     
     var properties: Model.Properties { get }
 	
+	/// Called by a cache instance after the request has completed. Updates the cache's stored models with the new data from the API response.
 	@MainActor
 	func updateCache(_ cache: any CacheProtocol<API>, with response: Response) -> Model
 }
@@ -60,6 +63,7 @@ public protocol APIUpdateRequest<API, Model>: APIRequest where Response == Model
     var id: UUID { get }
     var properties: Model.Properties { get }
 	
+	/// Called by a cache instance after the request has completed. Updates the cache's stored models with the new data from the API response.
 	@MainActor
 	func updateCache(_ cache: any CacheProtocol<API>, with response: Response) -> Model
 }
@@ -69,6 +73,7 @@ public protocol APIDeleteRequest<API, Model>: APIRequest where Response == UUID 
     
     var id: UUID { get }
 	
+	/// Called by a cache instance after the request has completed. Updates the cache's stored models with the new data from the API response.
 	@MainActor
 	func updateCache(_ cache: any CacheProtocol<API>, with response: Response) -> UUID
 }
