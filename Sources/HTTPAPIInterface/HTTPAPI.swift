@@ -99,7 +99,7 @@ open class HTTPAPI: APIProtocol, Sendable {
     public var endpoint: HTTPEndpoint
     public var credentials: Credentials?
     
-    public var options: Options = .default
+    open var options: Options = .default
     
     public init(client: HTTPClient = .shared, endpoint: HTTPEndpoint, credentials: Credentials? = nil) {
         self.client = client
@@ -108,7 +108,7 @@ open class HTTPAPI: APIProtocol, Sendable {
     }
     
     /// Sends a raw API request and checks for errors, but doesn't decode a response.
-    public func makeRequest(_ request: RawRequest) async throws(APIError) -> RawResponse {
+    open func makeRequest(_ request: RawRequest) async throws(APIError) -> RawResponse {
         func fetch(_ clientRequest: HTTPClientRequest) async throws(APIError) -> (HTTPClientResponse, Data) {
             do {
                 let response = try await client.execute(clientRequest, timeout: .seconds(10))
