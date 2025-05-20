@@ -40,8 +40,8 @@ extension APIUpdateRequest {
 
 extension APIDeleteRequest {
 	@MainActor
-	public func updateCache(_ cache: any CacheProtocol<API>, with id: Response) -> UUID {
-		cache.removeModel(id: id)
-		return id
+	public func updateCache(_ cache: any CacheProtocol<API>, with container: Response) -> Model.Properties {
+		cache.removeModel(id: container.id)
+		return container.properties
 	}
 }

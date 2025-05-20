@@ -7,7 +7,7 @@ public protocol WritableCacheProtocol<API>: CacheProtocol {
     
     func execute<Request: APIUpdateRequest>(request: Request) async throws(API.APIError) -> Result<Request.Model, Request.Failure> where Request.API == API
     
-    func execute<Request: APIDeleteRequest>(request: Request) async throws(API.APIError) -> Result<UUID, Request.Failure> where Request.API == API
+	func execute<Request: APIDeleteRequest>(request: Request) async throws(API.APIError) -> Result<Request.Model.Properties, Request.Failure> where Request.API == API
 }
 
 @MainActor
@@ -18,7 +18,7 @@ public class WritableCache<API: APIProtocol>: Cache<API>, WritableCacheProtocol 
     
     typealias CreateOperation = Operation<any ModelProtocol, Error>
     typealias UpdateOperation = Operation<any ModelProtocol, Error>
-    typealias DeleteOperation = Operation<UUID, Error>
+    typealias DeleteOperation = Operation<any ModelProperties, Error>
     
     public func execute<Request: APICreateRequest>(request: Request) async throws(API.APIError) -> Result<Request.Model, Request.Failure> where API == Request.API {
         let operation = CreateOperation(request, on: api) { container in
@@ -59,10 +59,10 @@ public class WritableCache<API: APIProtocol>: Cache<API>, WritableCacheProtocol 
             .mapError { $0 as! Request.Failure }
     }
     
-    public func execute<Request: APIDeleteRequest>(request: Request) async throws(API.APIError) -> Result<UUID, Request.Failure> where API == Request.API {
+	public func execute<Request: APIDeleteRequest>(request: Request) async throws(API.APIError) -> Result<Request.Model.Properties, Request.Failure> where API == Request.API {
         let runningOperation = deleteOperations[request.id]
-        let operation = runningOperation ?? DeleteOperation(request, on: api) { id in
-			request.updateCache(self, with: id)
+        let operation = runningOperation ?? DeleteOperation(request, on: api) { container in
+			request.updateCache(self, with: container)
         } handleFailure: { $0 } handleAPIError: { _ in }
         
         deleteOperations[request.id] = operation
@@ -75,6 +75,7 @@ public class WritableCache<API: APIProtocol>: Cache<API>, WritableCacheProtocol 
         }
         
         return try await operation.get()
+			.map { $0 as! Request.Model.Properties }
             .mapError { $0 as! Request.Failure }
     }
 }

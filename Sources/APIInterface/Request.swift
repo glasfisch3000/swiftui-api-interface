@@ -68,12 +68,12 @@ public protocol APIUpdateRequest<API, Model>: APIRequest where Response == Model
 	func updateCache(_ cache: any CacheProtocol<API>, with response: Response) -> Model
 }
 
-public protocol APIDeleteRequest<API, Model>: APIRequest where Response == UUID {
+public protocol APIDeleteRequest<API, Model>: APIRequest where Response == ModelCodingContainer<Model> {
     associatedtype Model: ModelProtocol where Model.API == API
     
     var id: UUID { get }
 	
 	/// Called by a cache instance after the request has completed. Updates the cache's stored models with the new data from the API response.
 	@MainActor
-	func updateCache(_ cache: any CacheProtocol<API>, with response: Response) -> UUID
+	func updateCache(_ cache: any CacheProtocol<API>, with response: Response) -> Model.Properties
 }
