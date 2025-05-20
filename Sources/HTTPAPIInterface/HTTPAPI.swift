@@ -99,7 +99,7 @@ open class HTTPAPI: APIProtocol, Sendable {
     public var endpoint: HTTPEndpoint
     public var credentials: Credentials?
     
-    open var options: Options = .default
+    public var options: Options = .default
     
     public init(client: HTTPClient = .shared, endpoint: HTTPEndpoint, credentials: Credentials? = nil) {
         self.client = client
