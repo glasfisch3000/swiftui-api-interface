@@ -42,6 +42,7 @@ public struct ListFetched<Request: APIListRequest>: Sendable, DynamicProperty {
 
 extension ListFetched {
     /// Re-load the cached value.
+	@Sendable
     public func reload() async {
         defer {
             alreadyFetched = true
@@ -54,6 +55,7 @@ extension ListFetched {
     
     /// Inherited from `DynamicProperty.update()`.
     /// Do not use this manually as it is called automatically and has no effect once a value is cached.
+	@Sendable
     nonisolated
     public func update() {
         Task { @MainActor in

@@ -37,6 +37,7 @@ public struct Fetched<Request: APIFindRequest>: Sendable, DynamicProperty {
 
 extension Fetched {
     /// Re-load the cached value.
+	@Sendable
     public func reload() async {
         defer { alreadyFetched = true }
         
@@ -47,6 +48,7 @@ extension Fetched {
     
     /// Inherited from `DynamicProperty.update()`.
     /// Do not use this manually as it is called automatically and has no effect once a value is cached.
+	@Sendable
     nonisolated
     public func update() {
         Task { @MainActor in
