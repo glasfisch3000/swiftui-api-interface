@@ -37,10 +37,6 @@ extension ListFetched {
     /// Re-load the cached value.
 	@Sendable
     public func reload() async {
-        defer {
-            alreadyFetched = true
-        }
-        
         do {
             try await cache.execute(request: request)
         } catch { }
