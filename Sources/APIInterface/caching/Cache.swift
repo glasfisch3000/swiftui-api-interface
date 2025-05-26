@@ -5,10 +5,11 @@ import SwiftUI
 @Observable
 public class Cache<API: APIProtocol>: CacheProtocol {
 	public var api: API
+
 	
 	public var cachedModels: [UUID: any ModelProtocol] = [:]
-	public var cachedFailures: [UUID: Error] = [:]
-	public var listFailures: [CacheListRequestSignature: Error] = [:]
+	public var findRequestCache: [UUID: RequestCacheResult] = [:]
+	public var listRequestCache: [CacheListRequestSignature: RequestCacheResult] = [:]
 	
 	internal var listOperations: [CacheListRequestSignature: ListOperation] = [:]
 	internal var findOperations: [UUID: FindOperation] = [:]
@@ -17,21 +18,34 @@ public class Cache<API: APIProtocol>: CacheProtocol {
 		self.api = api
 	}
 	
-	public func get<Request: APIListRequest>(_ request: Request) -> CacheEntry<[UUID: Request.Model], Request.Failure> {
+	public func get<Request: APIListRequest>(_ request: Request) -> CacheEntry<[UUID: Request.Model], Request.Failure>? {
 		let values = cachedModels
 			.compactMapValues { $0 as? Request.Model }
 			.filter { request.filterModel($0.value) }
+		let running = listOperations[request.cacheSignature] != nil
+		let failure = listRequestCache[request.cacheSignature]
 		
-		let failure = listFailures[request.cacheSignature] as? Request.Failure
-		let runningOperation = listOperations[request.cacheSignature]
-		return .init(value: values, failure: failure, loading: runningOperation != nil)
+		if let f = failure?.error as? Request.Failure {
+			return .init(value: values, failure: f, loading: running)
+		} else if failure != nil || running || !values.isEmpty {
+			return .init(value: values, failure: nil, loading: running)
+		} else {
+			return nil
+		}
 	}
 	
-	public func get<Request: APIFindRequest>(_ request: Request) -> CacheEntry<Request.Model?, Request.Failure> {
-		let values = cachedModels[request.id] as? Request.Model
-		let failure = cachedFailures[request.id] as? Request.Failure
-		let runningOperation = findOperations[request.id]
-		return .init(value: values, failure: failure, loading: runningOperation != nil)
+	public func get<Request: APIFindRequest>(_ request: Request) -> CacheEntry<Request.Model?, Request.Failure>? {
+		let value = cachedModels[request.id] as? Request.Model
+		let running = findOperations[request.id] != nil
+		let failure = findRequestCache[request.id]
+		
+		if let f = failure?.error as? Request.Failure {
+			return .init(value: value, failure: f, loading: running)
+		} else if failure != nil || running || value != nil {
+			return .init(value: value, failure: nil, loading: running)
+		} else {
+			return nil
+		}
 	}
 }
 
@@ -76,12 +90,13 @@ extension Cache {
 	public func execute<Request: APIListRequest>(request: Request) async throws(API.APIError) -> Result<[Request.Model], Request.Failure> where Request.API == API {
 		let runningOperation = listOperations[request.cacheSignature]
 		let operation = runningOperation ?? ListOperation(request, on: api) { codingContainers in
-			request.updateCache(self, with: codingContainers)
+			self.listRequestCache[request.cacheSignature] = .init()
+			return request.updateCache(self, with: codingContainers)
 		} handleFailure: { listFailure in
-			self.listFailures[request.cacheSignature] = listFailure
+			self.listRequestCache[request.cacheSignature] = .init(error: listFailure)
 			return listFailure
 		} handleAPIError: { _ in
-			self.listFailures.removeValue(forKey: request.cacheSignature)
+			self.listRequestCache[request.cacheSignature] = .init()
 		}
 		
 		listOperations[request.cacheSignature] = operation
@@ -102,12 +117,13 @@ extension Cache {
 	public func execute<Request: APIFindRequest>(request: Request) async throws(API.APIError) -> Result<Request.Model, Request.Failure> where Request.API == API {
 		let runningOperation = findOperations[request.id]
 		let operation = runningOperation ?? FindOperation(request, on: api) { codingContainer in
-			request.updateCache(self, with: codingContainer)
+			self.findRequestCache[request.id] = .init()
+			return request.updateCache(self, with: codingContainer)
 		} handleFailure: { findFailure in
-			self.cachedFailures[request.id] = findFailure
+			self.findRequestCache[request.id] = .init(error: findFailure)
 			return findFailure
 		} handleAPIError: { _ in
-			self.cachedFailures.removeValue(forKey: request.id)
+			self.findRequestCache[request.id] = .init()
 		}
 		
 		findOperations[request.id] = operation

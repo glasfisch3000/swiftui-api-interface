@@ -3,7 +3,7 @@ import Foundation
 extension APIListRequest {
 	@MainActor
 	public func updateCache(_ cache: any CacheProtocol<API>, with containers: Response) -> [Model] {
-		cache.listFailures.removeValue(forKey: self.cacheSignature)
+		cache.listRequestCache.removeValue(forKey: self.cacheSignature)
 		
 		let tuples = containers.map { ($0.id, $0.properties) }
 		

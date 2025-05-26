@@ -10,8 +10,6 @@ public struct ListFetched<Request: APIListRequest>: Sendable, DynamicProperty {
     /// The request to fetch the models with.
     public var request: Request
     
-    @State private var alreadyFetched = false
-    
     public init(request: Request, cache: any CacheProtocol<Request.API>) {
         self.request = request
         self.cache = cache
@@ -21,22 +19,17 @@ public struct ListFetched<Request: APIListRequest>: Sendable, DynamicProperty {
     
     /// The resulting value from the last load action, if any.
     public var wrappedValue: [UUID: Request.Model]? {
-        let value = cache.get(request).value
-        if alreadyFetched || !value.isEmpty {
-            return value
-        } else {
-            return nil
-        }
+        cache.get(request)?.value
     }
     
     /// Indicates whether the value is currently being loaded from source.
     public var isLoading: Bool {
-        cache.get(request).loading
+        cache.get(request)?.loading ?? false
     }
     
     /// The resulting failure from the last loading operation, if any.
     public var failure: Request.Failure? {
-        cache.get(request).failure
+        cache.get(request)?.failure
     }
 }
 
@@ -59,10 +52,7 @@ extension ListFetched {
     nonisolated
     public func update() {
         Task { @MainActor in
-            if alreadyFetched { return }
-            defer { alreadyFetched = true }
-            
-            guard cache.get(request).value.isEmpty else { return }
+            guard cache.get(request) == nil else { return }
             
             do {
                 try await cache.execute(request: request)

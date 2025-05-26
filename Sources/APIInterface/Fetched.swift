@@ -10,8 +10,6 @@ public struct Fetched<Request: APIFindRequest>: Sendable, DynamicProperty {
     /// The request to fetch the model with.
     public var request: Request
     
-    @State private var alreadyFetched = false
-    
     public init(request: Request, cache: any CacheProtocol<Request.API>) {
         self.request = request
         self.cache = cache
@@ -21,17 +19,17 @@ public struct Fetched<Request: APIFindRequest>: Sendable, DynamicProperty {
     
     /// The resulting value from the last load action, if any.
     public var wrappedValue: Request.Model? {
-        cache.get(request).value
+        cache.get(request)?.value
     }
     
     /// Indicates whether the value is currently being loaded from source.
     public var isLoading: Bool {
-        cache.get(request).loading
+        cache.get(request)?.loading ?? false
     }
     
     /// The resulting failure from the last loading operation, if any.
     public var failure: Request.Failure? {
-        cache.get(request).failure
+        cache.get(request)?.failure
     }
 }
 
@@ -39,8 +37,6 @@ extension Fetched {
     /// Re-load the cached value.
 	@Sendable
     public func reload() async {
-        defer { alreadyFetched = true }
-        
         do {
             try await cache.execute(request: request)
         } catch { }
@@ -52,10 +48,7 @@ extension Fetched {
     nonisolated
     public func update() {
         Task { @MainActor in
-            if alreadyFetched { return }
-            defer { alreadyFetched = true }
-            
-            guard cache.get(request).value == nil else { return }
+            guard cache.get(request) == nil else { return }
             
             do {
                 try await cache.execute(request: request)

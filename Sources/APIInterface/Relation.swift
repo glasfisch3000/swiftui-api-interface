@@ -20,19 +20,19 @@ public struct Relation<Parent: ModelProtocol, Request: APIFindRequest>: Sendable
     @MainActor
     public var wrappedValue: Request.Model? {
         guard let parent = parent else { return nil }
-        return cache?.get(request(parent.properties)).value
+        return cache?.get(request(parent.properties))?.value
     }
     
     @MainActor
     public var isLoading: Bool {
         guard let parent = parent else { return false }
-        return cache?.get(request(parent.properties)).loading ?? false
+        return cache?.get(request(parent.properties))?.loading ?? false
     }
     
     @MainActor
     public var failure: Request.Failure? {
         guard let parent = parent else { return nil }
-        return cache?.get(request(parent.properties)).failure
+        return cache?.get(request(parent.properties))?.failure
     }
     
     public var projectedValue: Self { self }
