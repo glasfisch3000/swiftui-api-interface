@@ -19,6 +19,9 @@ public protocol CacheProtocol<API>: Sendable {
     
     @discardableResult
     func execute<Request: APIFindRequest>(request: Request) async throws(API.APIError) -> Result<Request.Model, Request.Failure> where Request.API == API
+	
+	/// Clears all cached data.
+	func nuke(keepingCapacity: Bool)
 }
 
 extension CacheProtocol {
@@ -39,5 +42,13 @@ extension CacheProtocol {
 			cachedModels[id] = model
 			return model
 		}
+	}
+}
+
+extension CacheProtocol {
+	public func nuke(keepingCapacity: Bool = false) {
+		self.cachedModels.removeAll(keepingCapacity: keepingCapacity)
+		self.cachedFailures.removeAll(keepingCapacity: keepingCapacity)
+		self.listFailures.removeAll(keepingCapacity: keepingCapacity)
 	}
 }
