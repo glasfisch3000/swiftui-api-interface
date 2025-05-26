@@ -1,6 +1,8 @@
 public struct HTTPEndpoint: Sendable {
-    public enum Scheme: String, Sendable, CaseIterable {
+    public enum Scheme: String, Sendable, Identifiable, CaseIterable {
         case http, https
+		
+		public var id: String { rawValue }
     }
     
     public var scheme: Scheme
