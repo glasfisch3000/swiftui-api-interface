@@ -3,8 +3,6 @@ import Foundation
 extension APIListRequest {
 	@MainActor
 	public func updateCache(_ cache: any CacheProtocol<API>, with containers: Response) -> [Model] {
-		cache.listRequestCache.removeValue(forKey: self.cacheSignature)
-		
 		let tuples = containers.map { ($0.id, $0.properties) }
 		
 		// remove everything from cachedValues that was apparently deleted
