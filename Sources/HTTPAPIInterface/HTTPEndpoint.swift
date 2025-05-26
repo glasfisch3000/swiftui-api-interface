@@ -1,5 +1,5 @@
 public struct HTTPEndpoint: Sendable {
-    public enum Scheme: String, Sendable {
+    public enum Scheme: String, Sendable, CaseIterable {
         case http, https
     }
     
