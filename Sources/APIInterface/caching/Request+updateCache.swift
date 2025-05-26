@@ -45,3 +45,17 @@ extension APIDeleteRequest {
 		return container.properties
 	}
 }
+
+extension APIDeleteRequest where Model: SoftDeletableModelProtocol {
+	@MainActor
+	public func updateCache(_ cache: any CacheProtocol<API>, with container: Response) -> Model.Properties {
+		(cache.setModel(id: container.id, properties: container.properties) as Model).properties
+	}
+}
+
+extension APIRestoreRequest {
+	@MainActor
+	public func updateCache(_ cache: any CacheProtocol<API>, with container: Response) -> Model {
+		cache.setModel(id: container.id, properties: container.properties) as Model
+	}
+}

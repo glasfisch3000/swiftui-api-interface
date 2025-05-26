@@ -26,3 +26,12 @@ extension ModelProtocol {
         return lhs.id < rhs.id
     }
 }
+
+
+public protocol SoftDeletableModelProtocol: ModelProtocol where Properties: SoftDeletableModelProperties { }
+
+extension SoftDeletableModelProtocol {
+	public var isDeleted: Bool {
+		self.properties.deleted != nil
+	}
+}

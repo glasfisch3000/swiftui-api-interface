@@ -45,8 +45,7 @@ public protocol HTTPRequestFailure: Error {
 
 
 
-public protocol HTTPListRequest<Model>: APIListRequest, HTTPRequest
-where Failure: HTTPRequestFailure { }
+public protocol HTTPListRequest<Model>: APIListRequest, HTTPRequest where Failure: HTTPRequestFailure { }
 
 extension HTTPListRequest {
     public var method: HTTPMethod { .GET }
@@ -57,8 +56,7 @@ extension HTTPListRequest {
 
 
 
-public protocol HTTPFindRequest<Model>: APIFindRequest, HTTPRequest
-where Failure: HTTPRequestFailure { }
+public protocol HTTPFindRequest<Model>: APIFindRequest, HTTPRequest where Failure: HTTPRequestFailure { }
 
 extension HTTPFindRequest {
     public var path: [String] { [Model.scheme, id.uuidString] }
@@ -69,8 +67,7 @@ extension HTTPFindRequest {
 
 
 
-public protocol HTTPCreateRequest<Model>: APICreateRequest, HTTPRequest
-where Failure: HTTPRequestFailure { }
+public protocol HTTPCreateRequest<Model>: APICreateRequest, HTTPRequest where Failure: HTTPRequestFailure { }
 
 extension HTTPCreateRequest {
     public var path: [String] { [Model.scheme] }
@@ -84,8 +81,7 @@ extension HTTPCreateRequest {
 
 
 
-public protocol HTTPUpdateRequest<Model>: APIUpdateRequest, HTTPRequest
-where Failure: HTTPRequestFailure { }
+public protocol HTTPUpdateRequest<Model>: APIUpdateRequest, HTTPRequest where Failure: HTTPRequestFailure { }
 
 extension HTTPUpdateRequest {
     public var path: [String] { [Model.scheme, id.uuidString] }
@@ -99,12 +95,22 @@ extension HTTPUpdateRequest {
 
 
 
-public protocol HTTPDeleteRequest<Model>: APIDeleteRequest, HTTPRequest
-where Failure: HTTPRequestFailure { }
+public protocol HTTPDeleteRequest<Model>: APIDeleteRequest, HTTPRequest where Failure: HTTPRequestFailure { }
 
 extension HTTPDeleteRequest {
     public var path: [String] { [Model.scheme, id.uuidString] }
     public var method: HTTPMethod { .DELETE }
     public var query: [String : QueryEncodable?] { [:] }
     public var body: Data? { nil }
+}
+
+
+
+public protocol HTTPRestoreRequest<Model>: APIRestoreRequest, HTTPRequest where Failure: HTTPRequestFailure { }
+
+extension HTTPRestoreRequest {
+	public var path: [String] { [Model.scheme, id.uuidString] }
+	public var method: HTTPMethod { .PUT }
+	public var query: [String : QueryEncodable?] { [:] }
+	public var body: Data? { nil }
 }

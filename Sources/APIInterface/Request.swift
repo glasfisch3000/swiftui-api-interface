@@ -77,3 +77,13 @@ public protocol APIDeleteRequest<API, Model>: APIRequest where Response == Model
 	@MainActor
 	func updateCache(_ cache: any CacheProtocol<API>, with response: Response) -> Model.Properties
 }
+
+public protocol APIRestoreRequest<API, Model>: APIRequest where Response == ModelCodingContainer<Model> {
+	associatedtype Model: SoftDeletableModelProtocol where Model.API == API
+	
+	var id: UUID { get }
+	
+	/// Called by a cache instance after the request has completed. Updates the cache's stored models with the new data from the API response.
+	@MainActor
+	func updateCache(_ cache: any CacheProtocol<API>, with response: Response) -> Model
+}
