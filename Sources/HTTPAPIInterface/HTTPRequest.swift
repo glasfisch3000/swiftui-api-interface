@@ -106,6 +106,17 @@ extension HTTPDeleteRequest {
 
 
 
+public protocol HTTPSoftDeleteRequest<Model>: APISoftDeleteRequest, HTTPRequest where Failure: HTTPRequestFailure { }
+
+extension HTTPSoftDeleteRequest {
+	public var path: [String] { [Model.scheme, id.uuidString] }
+	public var method: HTTPMethod { .DELETE }
+	public var query: [String : QueryEncodable?] { ["force" : self.force] }
+	public var body: Data? { nil }
+}
+
+
+
 public protocol HTTPRestoreRequest<Model>: APIRestoreRequest, HTTPRequest where Failure: HTTPRequestFailure { }
 
 extension HTTPRestoreRequest {

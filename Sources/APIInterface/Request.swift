@@ -78,6 +78,10 @@ public protocol APIDeleteRequest<API, Model>: APIRequest where Response == Model
 	func updateCache(_ cache: any CacheProtocol<API>, with response: Response) -> Model.Properties
 }
 
+public protocol APISoftDeleteRequest<API, Model>: APIDeleteRequest where Model: SoftDeletableModelProtocol {
+	var force: Bool { get }
+}
+
 public protocol APIRestoreRequest<API, Model>: APIRequest where Response == ModelCodingContainer<Model> {
 	associatedtype Model: SoftDeletableModelProtocol where Model.API == API
 	
