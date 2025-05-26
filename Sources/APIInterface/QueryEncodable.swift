@@ -5,6 +5,10 @@ public protocol QueryEncodable {
 }
 
 
+extension Bool: QueryEncodable {
+	public var asQueryString: String { self.description }
+}
+
 extension Int: QueryEncodable {
     public var asQueryString: String { self.description }
 }
