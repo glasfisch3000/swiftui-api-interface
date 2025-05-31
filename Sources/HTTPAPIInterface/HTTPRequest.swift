@@ -27,6 +27,7 @@ extension HTTPRequest where Response: Decodable, Failure: HTTPRequestFailure {
         case .success(let data):
             do {
                 let decoder = JSONDecoder()
+				decoder.dateDecodingStrategy = .iso8601
                 return try decoder.decode(Response.self, from: data)
             } catch {
                 throw .decodingError(error)
